@@ -45,7 +45,7 @@ ENV RCLONE_CONFIG /srv/.rclone/rclone.conf
 # Install DEEPaaS from PyPi
 # Install FLAAT (FLAsk support for handling Access Tokens)
 RUN pip install --no-cache-dir \
-        deepaas \
+        'deepaas>=0.4.0' \
         flaat && \
     rm -rf /root/.cache/pip/* && \
     rm -rf /tmp/*
@@ -61,7 +61,7 @@ RUN pip --no-cache-dir install -r /srv/requirements-dev.txt && \
     rm -rf /tmp/*
 
 
-### (OPTIONAL!) If you want to use Jupyter, uncomment:
+### (OPTIONAL!) If you want to use Jupyter, uncomment and rebuild the image:
 #RUN pip --no-cache-dir install jupyterlab && \
 #    python -m ipykernel.kernelspec && \
 #    rm -rf /root/.cache/pip/* && \
