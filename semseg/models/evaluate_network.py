@@ -1,15 +1,18 @@
 # imports:
+import semseg.config as cfg
 import model_generator
 import data_io as dio
 
 import numpy as np
 from sklearn import metrics
 import keras
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
-import sys
-from sys import argv
+import os, re
+import argparse
 
 
 # calculate the networks prediction at a given window of the image:
@@ -45,9 +48,10 @@ def create_colormap(label_matrix,title):
     # generate and show the map
     plt.imshow(label_matrix, cmap=label_cmap)
     plt.title(title)
-    plt.show()
-
-    #plt.savefig('/gpfs/homeb/pcp0/pcp0096/semseg/out/ground_truth.png')
+    #plt.show()
+    
+    plot_file = title.replace(' ', '_') + '.png'
+    plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file))
 
 
 # function to generate a plot of the ground truth or network prediction if there are only 5 classes in the image
@@ -68,9 +72,11 @@ def create_colormap_no_clutter(label_matrix,title):
 
     # generate and show the map
     plt.imshow(label_matrix, cmap=label_cmap)
-    plt.show()
+    plt.title(title)    
+    #plt.show()
 
-    #plt.savefig('/gpfs/homeb/pcp0/pcp0096/semseg/out/classification_map.png')
+    plot_file = title.replace(' ', '_') + '.png'
+    plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file))
 
 
 # function to generate a plot of the wrong classified pixels
@@ -81,9 +87,9 @@ def create_errormap(error_matrix,title):
     # generate and show the map
     plt.imshow(error_matrix, cmap=error_cmap)
     plt.title(title)
-    plt.show()
+    #plt.show()
 
-    #plt.savefig('/gpfs/homeb/pcp0/pcp0096/semseg/out/error_map.png')
+    plt.savefig(os.path.join(cfg.BASE_DIR, 'data', 'Error_map.png'))
 
 
 # calculate the confusion matrix and the class accuracy:
@@ -122,20 +128,17 @@ def print_labelwise_accuracy(confusion, label_accuracy):
 
 
 # function to apply a trained network to a whole image:
-def predict_complete_image(image_number, network_weight_file):
-
-    print('--> Load image number {} ... '.format(image_number))
-    image_name = '/homea/hpclab/train001/data/vaihingen/vaihingen_' + str(image_number) + '.hdf5'
-    data, ground_truth = dio.load_vaihingen_image(image_name, image_number)
-    print('Image size: (', data.shape[0], 'x', data.shape[1], ')')
+def predict_complete_image(patch_path, network_weight_file):
+    image_number = re.search('_(.*).hdf5', patch_path).group(1)
+    print('[INFO] Load image number {} ... '.format(image_number))
+    data, ground_truth = dio.load_vaihingen_image(patch_path, image_number)
+    print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
 
     num_labels = 6
     num_labels_in_ground_truth = np.max(ground_truth)
 
     # plot the input:
-    create_colormap(data,'Image patch')
-
-
+    create_colormap(data,'Input image patch')
 
     # create a colormap of the ground truth:
     if num_labels_in_ground_truth == num_labels:
@@ -143,7 +146,7 @@ def predict_complete_image(image_number, network_weight_file):
     else:
         create_colormap_no_clutter(ground_truth,'Groundtruth')
 
-    print('--> Load a trained FCN from {} ...'.format(network_weight_file))
+    print('[INFO] Load a trained FCN from {} ...'.format(network_weight_file))
     model = model_generator.generate_resnet50_fcn(use_pretraining=False)
     model.load_weights(network_weight_file)
 
@@ -155,7 +158,7 @@ def predict_complete_image(image_number, network_weight_file):
     im_w = data.shape[1]
     s = 256
 
-    print('--> Apply network to image ... ')
+    print('[INFO] Apply network to image ... ')
     # iterate over the complete image:
     prediction = np.zeros((im_h, im_w))
     k = l = 0
@@ -180,7 +183,7 @@ def predict_complete_image(image_number, network_weight_file):
     # create a colormap showing the networks predictions:
     create_colormap(prediction,'Classification map')
 
-    print('--> Calculate error map ... ')
+    print('[INFO] Calculate error map ... ')
     # create a map, showing which pixels were predicted wrongly:
     error_map = np.zeros((im_h, im_w))
     num_cor = 0
@@ -191,10 +194,10 @@ def predict_complete_image(image_number, network_weight_file):
                 num_cor += 1
     create_errormap(error_map,'Misclassified pixels map')
 
-    print('--> Analyze the network accuracy ... ')
+    print('[INFO] Analyze the network accuracy ... ')
 
    
-    print 'Overall accuracy: %0.2f'% np.divide(float(100*num_cor), float(im_w*im_h))
+    print '[INFO] Overall accuracy: %0.2f'% np.divide(float(100*num_cor), float(im_w*im_h))
     #print('Overall accuracy: {}%'.format(np.round(100*num_cor/(im_w*im_h), 1)))
 
     # calculate the confusion matrix:
@@ -204,26 +207,23 @@ def predict_complete_image(image_number, network_weight_file):
 
     print_labelwise_accuracy(confusion, label_accuracy)
 
-    print('Confusion matrix: ')
+    print('[INFO] Confusion matrix: ')
     print(confusion)
 
 
-def main(arguments):
-    patch = arguments[1]
-    model = arguments[2]
-    predict_complete_image(patch, model)
+def main():
+    predict_complete_image(args.patch_path, args.model)
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Evaluate the model')
+    parser.add_argument('--patch_path', type=str,
+                        help='Location of of the patch to test \
+                        (e.g., /srv/semseg/data/raw/vaihingen_15.hdf5 )')
+    parser.add_argument('--model', type=str,
+                        help='Location of the trained network model \
+                        (e.g., /srv/semseg/models/resnet50_fcn_weights.hdf5)')
 
-    if len(sys.argv) < 2:
-        print ''
-        print '***********************************'
-        print 'Two parameters need to be specified:'
-        print '1. The number of the patch to test (e.g., 15 ,23)'
-        print '2. The network model (e.g., /homea/hpclab/train002/semseg/models/resnet50_fcn_weights.hdf5)'
-        print '***********************************'
+    args = parser.parse_args()
 
-        sys.exit()
-
-    main(argv)
+    main()
