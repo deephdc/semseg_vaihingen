@@ -6,6 +6,7 @@ import json
 import yaml
 import argparse
 import pkg_resources
+from keras import backend
 # import project's config.py
 import semseg.config as cfg
 import semseg.models.train_resnet50_fcn as train_resnet50
@@ -85,40 +86,32 @@ def train(train_args):
 
     run_results["train_args"] = train_args
 
-    print(train_resnet50.ParamHeader)
-    params=train_resnet50.ParamEntry(Timestamp=datetime(2019, 3, 14, 17, 27, 21, 940185), 
-                                     Script='train_resnet50_fcn.pyc', 
-                                     val_acc=0.25267167524857953, 
-                                     val_loss=11.909434752030807, 
-                                     TotalTime=531.7397999763489, 
-                                     MeanPerEpoch=531.7397999763489, 
-                                     StDev=0, augmentation=True, 
-                                     transfer_learning=True, 
-                                     batch_size=16, n_epochs=1, n_gpus=0)
-    
-    run_results["training"] = yaml.safe_load(json.dumps(params._asdict(), default=str))
-    print(run_results)
-    
-    if (train_args.no_augmentation):
-        params = train_resnet50.train(yaml.safe_load(train_args.data_path),
-                                      yaml.safe_load(train_args.model),
-                                      yaml.safe_load(train_args.no_augmentation),
-                                      yaml.safe_load(train_args.transfer_learning),
-                                      yaml.safe_load(train_args.n_gpus),
-                                      yaml.safe_load(train_args.n_epochs))
-    else:
+    # Clear possible pre-existing sessions. important!
+    backend.clear_session()
+
+
+    if (yaml.safe_load(train_args.augmentation)):
         params = train_resnet50.train_with_augmentation(
                                       yaml.safe_load(train_args.data_path),
                                       yaml.safe_load(train_args.model),
-                                      yaml.safe_load(train_args.no_augmentation),
+                                      yaml.safe_load(train_args.augmentation),
                                       yaml.safe_load(train_args.transfer_learning),
                                       yaml.safe_load(train_args.n_gpus),
-                                      yaml.safe_load(train_args.n_epochs))
+                                      yaml.safe_load(train_args.n_epochs),
+                                      yaml.safe_load(train_args.batch_size))
+    else:
+        params = train_resnet50.train(yaml.safe_load(train_args.data_path),
+                                      yaml.safe_load(train_args.model),
+                                      yaml.safe_load(train_args.augmentation),
+                                      yaml.safe_load(train_args.transfer_learning),
+                                      yaml.safe_load(train_args.n_gpus),
+                                      yaml.safe_load(train_args.n_epochs),
+                                      yaml.safe_load(train_args.batch_size))
     
     run_results["training"] = yaml.safe_load(json.dumps(params._asdict(), 
                                                         default=str))
 
-    print(run_results)
+    print("Run results: " + str(run_results))
     return run_results
 
 

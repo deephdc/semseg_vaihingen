@@ -18,12 +18,9 @@ import tensorflow as tf
 from keras.utils import multi_gpu_model
 
 ParamHeader = ['Timestamp', 'Script', 'val_acc', 'val_loss',
-               'TotalTime', 'MeanPerEpoch', 'StDev',
-               'augmentation', 'transfer_learning',
-               'batch_size', 'n_epochs','n_gpus']
+               'TotalTime', 'MeanPerEpoch', 'StDev']
 ParamEntry = namedtuple('ParamEntry', ParamHeader)
 
-BATCH_SIZE=16
 
 class TimeHistory(keras.callbacks.Callback):
     def on_train_begin(self, logs={}):
@@ -47,7 +44,8 @@ def train(data_path,
           augmentation_flag,
           transfer_learning_flag,
           n_gpus,
-          n_epochs):
+          n_epochs,
+          batch_size):
 
     num_labels = 6
 
@@ -85,7 +83,6 @@ def train(data_path,
                                 loss=keras.losses.categorical_crossentropy,
                                 metrics=['accuracy'])
 
-    batch_size = BATCH_SIZE #*n_gpus ### compare with fixed batch size, strong scaling (?)
     time_callback = TimeHistory()
     resnet50_fcn_model.fit(x_train, y_train, batch_size=batch_size, epochs=n_epochs, 
                            validation_data=(x_val, y_val),
@@ -105,17 +102,15 @@ def train(data_path,
 
     return ParamEntry(datetime.now(), os.path.basename(__file__),
                       time_callback.val_acc, time_callback.val_loss, 
-                      time_callback.total_duration, mn, sd,
-                      augmentation_flag, transfer_learning_flag, 
-                      batch_size, n_epochs, n_gpus)
-
+                      time_callback.total_duration, mn, sd)
 
 def train_with_augmentation(data_path,
                             output_model,
                             augmentation_flag,
                             transfer_learning_flag,
                             n_gpus,
-                            n_epochs):
+                            n_epochs,
+                            batch_size):
     num_labels = 6
 
     print('[INFO] Load data ... ')
@@ -173,7 +168,6 @@ def train_with_augmentation(data_path,
                                loss=keras.losses.categorical_crossentropy,
                                metrics=['accuracy'])
 
-    batch_size = BATCH_SIZE #*n_gpus   ### compare with fixed batch size, strong scaling (?)
     time_callback = TimeHistory()
     resnet50_fcn_model.fit(x_train, y_train, batch_size=batch_size, epochs=n_epochs, 
                            validation_data=(x_val, y_val),
@@ -193,10 +187,7 @@ def train_with_augmentation(data_path,
 
     return ParamEntry(datetime.now(), os.path.basename(__file__),
                       time_callback.val_acc, time_callback.val_loss, 
-                      time_callback.total_duration, mn, sd,
-                      augmentation_flag, transfer_learning_flag, 
-                      batch_size, n_epochs, n_gpus)
-
+                      time_callback.total_duration, mn, sd)
 
 
 def main():
@@ -212,6 +203,7 @@ def main():
         print(args.augmentation)
         print(args.transfer_learning)
         print(args.n_epochs)
+        print(args.batch_size)
     
     if args.augmentation:
         print(">> with augmentation")
@@ -220,7 +212,8 @@ def main():
                                          args.augmentation,
                                          args.transfer_learning,
                                          args.n_gpus,
-                                         args.n_epochs)
+                                         args.n_epochs,
+                                         args.batch_size)
     else:
         print(">> no augmentation")
         params = train(args.data_path, 
@@ -228,7 +221,8 @@ def main():
                        args.augmentation,
                        args.transfer_learning,
                        args.n_gpus,
-                       args.n_epochs)
+                       args.n_epochs,
+                       args.batch_size)
 
     param_entries.append(params)
     
@@ -248,10 +242,12 @@ if __name__ == '__main__':
                         (e.g., /homea/hpclab/train002/semseg/models/resnet50_fcn_weights.hdf5)')
     parser.add_argument('--n_epochs', type=int, default=20, 
                         help='Number of epochs to train on')
+    parser.add_argument('--batch_size', type=int, default=16,
+                        help='Number of samples per batch')
     parser.add_argument('--n_gpus', type=int, default=1,
                         help='Number of GPUs to train on (one node only!)')
-    parser.add_argument('--no_augmentation', dest='augmentation', default=True,
-                        action='store_false', help='Skip augmentation')
+    parser.add_argument('--augmentation', dest='augmentation', default=False,
+                        action='store_true', help='Apply augmentation')
     parser.add_argument('--load_weights', dest='transfer_learning', default=False,
                         action='store_true', 
                         help='Use transfer learning and load pre-trained weights')
