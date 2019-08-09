@@ -8,17 +8,10 @@ from os import path
 # identify basedir for the package
 BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
 
+DATA_PATH= '/srv/semseg/data' #Location of vaihingen_train.hdf5 and vaihingen_val.hdf5
+MODEL_PATH= '/srv/semseg/models/resnet50_fcn_weights.hdf5' #Location + name of the output model 
 
-train_args = { 'data_path': {'default': '/srv/semseg/data',
-                             'help': 'Location of vaihingen_train.hdf5 and vaihingen_val.hdf5',
-                             'required': False
-                             },
-               'model': {'default': '/srv/semseg/models/resnet50_fcn_weights.hdf5',
-                         'help': 'Location + name of the output model \
-                         (e.g., /srv/semseg/models/resnet50_fcn_weights.hdf5)',
-                         'required': False
-                        },
-               'augmentation': {'default': False,
+train_args = { 'augmentation': {'default': False,
                                  'choices': [False, True],
                                  'help': 'Apply augmentation',
                                  'required': False
@@ -42,11 +35,5 @@ train_args = { 'data_path': {'default': '/srv/semseg/data',
                               }
 }
 
-#    parser.add_argument('--data_path', type=str,
-#                        help='Location of vaihingen_train.hdf5 and vaihingen_val.hdf5 \
-#                        (e.g., /homea/hpclab/train002/semseg/data/ )')
-#    parser.add_argument('--model', type=str,
-#                        help='Location + name of the output model \
-#                        (e.g., /homea/hpclab/train002/semseg/models/resnet50_fcn_weights.hdf5)')
 #    parser.add_argument('--log', type=str,
 #                        help='Location + name of the csv log file')  
