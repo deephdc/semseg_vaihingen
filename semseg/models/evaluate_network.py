@@ -117,14 +117,13 @@ def print_labelwise_accuracy(confusion, label_accuracy):
               'Car                    ',
               'Clutter/background     ']
     overall = np.sum(confusion, axis=1)
+
     print('')
     print('Labelwise accuracy: ')
     print('Labels             \t\t pixels     \t accuracy')
     for i, label in enumerate(labels):
         print('{} \t {}\t\t {}%'.format(label, overall[i], 100*label_accuracy[i]))
     print('')
-
-
 
 
 # function to apply a trained network to a whole image:
@@ -194,25 +193,33 @@ def predict_complete_image(patch_path, network_weight_file):
                 num_cor += 1
     create_errormap(error_map,'Misclassified pixels map')
 
-    print('[INFO] Analyze the network accuracy ... ')
 
-   
-    print '[INFO] Overall accuracy: %0.2f'% np.divide(float(100*num_cor), float(im_w*im_h))
+    print('[INFO] Analyze the network accuracy ... ')
+    results = {}
+    
     #print('Overall accuracy: {}%'.format(np.round(100*num_cor/(im_w*im_h), 1)))
+    overall_acc = np.divide(float(100*num_cor), float(im_w*im_h))
+    print('[INFO] Overall accuracy: %0.2f'% overall_acc)
+    results["Overall accuracy"] = '%0.2f' % overall_acc
 
     # calculate the confusion matrix:
     confusion, label_accuracy = analyze_result(ground_truth, prediction, 6)
-
-   
-
     print_labelwise_accuracy(confusion, label_accuracy)
+
+    # store the % of correct predicted pixels per label in a dict
+    results["Label accuracy"] = {}
+    labels = ['Impervious surfaces', 'Building', 'Low vegetation', 'Tree', 'Car ', 'Clutter/background']
+    for i, label in enumerate(labels):
+        results["Label accuracy"][label] = "{}%".format(100*label_accuracy[i])
 
     print('[INFO] Confusion matrix: ')
     print(confusion)
 
+    return results
+
 
 def main():
-    predict_complete_image(args.patch_path, args.model)
+    res = predict_complete_image(args.patch_path, args.model)
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@
 """
 Model description
 """
+import os
 import json
 import yaml
 import argparse
@@ -10,6 +11,7 @@ from keras import backend
 # import project's config.py
 import semseg.config as cfg
 import semseg.models.train_resnet50_fcn as train_resnet50
+import semseg.models.evaluate_network as predict_resnet50
 
 from datetime import datetime
 
@@ -45,22 +47,63 @@ def predict_file(*args):
     """
     Function to make prediction on a local file
     """
+
+#    print("predict file")
+    # check for file existence
+
+#    model = '/srv/semseg/models/resnet50_fcn_weights.hdf5'
+#    filename = '/srv/semseg/data/raw/vaihingen_15.hdf5'
+
+
+#    predict_resnet50.predict_complete_image(filename, model)
+    
     message = 'Not implemented in the model (predict_file)'
     return message
 
 
-def predict_data(*args):
+def predict_data(image):
     """
-    Function to make prediction on an uploaded file
+    Function to make prediction on an uploaded image file
     """
-    message = 'Not implemented in the model (predict_data)'
-    return message
+    
+    prediction_results = { "status" : "ok",
+                           "prediction": {} 
+                         }
+    model = cfg.MODEL_PATH 
+    
+    img_name = image['files'].filename
+    prediction_results["prediction"].update( {"File name" : img_name} ) 
+    
+    # Save the uploaded file for the time of the prediction
+    f = open("/tmp/%s" % img_name, "w+")
+    image['files'].save(f.name)
+    f.close
+    print("Sored file (temporarily) at: {} \t Size: {}".format(f.name,
+        os.path.getsize(f.name)))
+
+    try: 
+        prediction = predict_resnet50.predict_complete_image(f.name, model)
+        prediction_results["prediction"].update(prediction)
+        # Method?
+
+    except Exception as e:
+        raise e
+    finally:
+        os.remove(f.name)
+
+    # show colormap
+    # show errormap
+
+
+    return prediction_results 
+
 
 
 def predict_url(*args):
     """
     Function to make prediction on a URL
     """
+
     message = 'Not implemented in the model (predict_url)'
     return message
 
@@ -92,16 +135,16 @@ def train(train_args):
 
     if (yaml.safe_load(train_args.augmentation)):
         params = train_resnet50.train_with_augmentation(
-                                      yaml.safe_load(train_args.data_path),
-                                      yaml.safe_load(train_args.model),
+                                      cfg.DATA_PATH,
+                                      cfg.MODEL_PATH,
                                       yaml.safe_load(train_args.augmentation),
                                       yaml.safe_load(train_args.transfer_learning),
                                       yaml.safe_load(train_args.n_gpus),
                                       yaml.safe_load(train_args.n_epochs),
                                       yaml.safe_load(train_args.batch_size))
     else:
-        params = train_resnet50.train(yaml.safe_load(train_args.data_path),
-                                      yaml.safe_load(train_args.model),
+        params = train_resnet50.train(cfg.DATA_PATH,
+                                      cfg.MODEL_PATH,
                                       yaml.safe_load(train_args.augmentation),
                                       yaml.safe_load(train_args.transfer_learning),
                                       yaml.safe_load(train_args.n_gpus),
