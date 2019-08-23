@@ -102,8 +102,10 @@ def analyze_result(ground_truth, prediction, num_labels):
     confusion = metrics.confusion_matrix(ground_truth, prediction, np.arange(num_labels)+1)
 
     # labelwise accuracy = correctly classified pixels of this label / pixels of this label
-    label_accuracy = np.diag(confusion.astype(float)) / np.sum(confusion.astype(float), axis=1)
-
+    true_pos = np.diag(confusion.astype(float))
+    pred_pos = np.sum(confusion.astype(float), axis=1)
+    label_accuracy = np.divide(true_pos, pred_pos, out=np.ones_like(true_pos),
+            where=pred_pos!=0.0)
 
     return confusion, np.round(label_accuracy, 3)
 
@@ -200,17 +202,17 @@ def predict_complete_image(patch_path, network_weight_file):
     #print('Overall accuracy: {}%'.format(np.round(100*num_cor/(im_w*im_h), 1)))
     overall_acc = np.divide(float(100*num_cor), float(im_w*im_h))
     print('[INFO] Overall accuracy: %0.2f'% overall_acc)
-    results["Overall accuracy"] = '%0.2f' % overall_acc
+    results["overall_accuracy"] = '%0.2f' % overall_acc
 
     # calculate the confusion matrix:
     confusion, label_accuracy = analyze_result(ground_truth, prediction, 6)
     print_labelwise_accuracy(confusion, label_accuracy)
 
     # store the % of correct predicted pixels per label in a dict
-    results["Label accuracy"] = {}
+    results["label_accuracy"] = {}
     labels = ['Impervious surfaces', 'Building', 'Low vegetation', 'Tree', 'Car ', 'Clutter/background']
     for i, label in enumerate(labels):
-        results["Label accuracy"][label] = "{}%".format(100*label_accuracy[i])
+        results["label_accuracy"][label] = "{}%".format(100*label_accuracy[i])
 
     print('[INFO] Confusion matrix: ')
     print(confusion)
