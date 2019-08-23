@@ -8,11 +8,15 @@ import yaml
 import argparse
 import pkg_resources
 from keras import backend
+
+import flask
 from werkzeug.exceptions import BadRequest
+
 # import project's config.py
 import semseg.config as cfg
 import semseg.models.train_resnet50_fcn as train_resnet50
 import semseg.models.evaluate_network as predict_resnet50
+import semseg.models.merge_maps as merge_maps 
 
 from datetime import datetime
 
@@ -96,22 +100,19 @@ def predict_data(image):
         backend.clear_session()
         prediction = predict_resnet50.predict_complete_image(f.name, model)
         prediction_results["prediction"].update(prediction)
-        # Method?
 
     except Exception as e:
         raise e
     finally:
         os.remove(f.name)
 
-    #inputmap = '{}/Input_image_patch.png'.format(cfg.DATA_PATH)
-    #groundtruth = '{}/Groundtruth.png'.format(cfg.DATA_PATH)
-    #colormap = '{}/Classification_map.png'.format(cfg.DATA_PATH)
-    #errormap = '{}/Error_map.png'.format(cfg.DATA_PATH)
-    
-    # show maps
+    # Stream files back
+    result = merge_maps.merge_images()
+    return flask.send_file(filename_or_fp=result,
+                           as_attachment=True,
+                           attachment_filename=os.path.basename(result))
 
-    return prediction_results 
-
+#    return prediction_results 
 
 
 def predict_url(*args):
@@ -150,7 +151,7 @@ def train(train_args):
 
     if (yaml.safe_load(train_args.augmentation)):
         params = train_resnet50.train_with_augmentation(
-                                      cfg.DATA_PATH,
+                                      cfg.DATA_DIR,
                                       cfg.MODEL_PATH,
                                       yaml.safe_load(train_args.augmentation),
                                       yaml.safe_load(train_args.transfer_learning),
@@ -158,7 +159,7 @@ def train(train_args):
                                       yaml.safe_load(train_args.n_epochs),
                                       yaml.safe_load(train_args.batch_size))
     else:
-        params = train_resnet50.train(cfg.DATA_PATH,
+        params = train_resnet50.train(cfg.DATA_DIR,
                                       cfg.MODEL_PATH,
                                       yaml.safe_load(train_args.augmentation),
                                       yaml.safe_load(train_args.transfer_learning),
