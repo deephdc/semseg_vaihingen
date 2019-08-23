@@ -8,6 +8,7 @@ import yaml
 import argparse
 import pkg_resources
 from keras import backend
+from werkzeug.exceptions import BadRequest
 # import project's config.py
 import semseg.config as cfg
 import semseg.models.train_resnet50_fcn as train_resnet50
@@ -43,22 +44,27 @@ def get_metadata():
     return meta
 
 
-def predict_file(*args):
+def catch_data_error(data):
+    # Error catch: wrong image format
+    extension = data.split('.')[-1]
+    if extension != 'hdf5':
+        raise BadRequest(""" Image format error:
+        Only *.hdf5 files allowed. """)
+
+
+def predict_file(path):
     """
     Function to make prediction on a local file
     """
 
-#    print("predict file")
-    # check for file existence
-
-#    model = '/srv/semseg/models/resnet50_fcn_weights.hdf5'
-#    filename = '/srv/semseg/data/raw/vaihingen_15.hdf5'
-
-
-#    predict_resnet50.predict_complete_image(filename, model)
+    prediction_results = { "status" : "ok",
+                           "prediction": {} 
+                         }
     
-    message = 'Not implemented in the model (predict_file)'
-    return message
+    prediction = predict_resnet50.predict_complete_image(f.name, cfg.MODEL_PATH)
+    prediction_results["prediction"].update(prediction)
+    
+    return prediction_results 
 
 
 def predict_data(image):
@@ -66,22 +72,28 @@ def predict_data(image):
     Function to make prediction on an uploaded image file
     """
     
-    prediction_results = { "status" : "ok",
-                           "prediction": {} 
-                         }
-    model = cfg.MODEL_PATH 
-    
+    # Check and store data
     img_name = image['files'].filename
-    prediction_results["prediction"].update( {"File name" : img_name} ) 
     
-    # Save the uploaded file for the time of the prediction
+    catch_data_error(img_name)
+
     f = open("/tmp/%s" % img_name, "w+")
     image['files'].save(f.name)
     f.close
     print("Sored file (temporarily) at: {} \t Size: {}".format(f.name,
         os.path.getsize(f.name)))
 
+
+    prediction_results = { "status" : "ok",
+                           "prediction": {} 
+                         }
+    prediction_results["prediction"].update( {"file_name" : img_name} ) 
+
+    model = cfg.MODEL_PATH 
+    
     try: 
+        # Clear possible pre-existing sessions. important!
+        backend.clear_session()
         prediction = predict_resnet50.predict_complete_image(f.name, model)
         prediction_results["prediction"].update(prediction)
         # Method?
@@ -91,9 +103,12 @@ def predict_data(image):
     finally:
         os.remove(f.name)
 
-    # show colormap
-    # show errormap
-
+    #inputmap = '{}/Input_image_patch.png'.format(cfg.DATA_PATH)
+    #groundtruth = '{}/Groundtruth.png'.format(cfg.DATA_PATH)
+    #colormap = '{}/Classification_map.png'.format(cfg.DATA_PATH)
+    #errormap = '{}/Error_map.png'.format(cfg.DATA_PATH)
+    
+    # show maps
 
     return prediction_results 
 
