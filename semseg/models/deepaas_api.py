@@ -53,7 +53,7 @@ def catch_data_error(data):
     extension = data.split('.')[-1]
     if extension != 'hdf5':
         raise BadRequest(""" Image format error:
-        Only *.hdf5 files allowed. """)
+        Only '.hdf5' files allowed. """)
 
 
 def predict_file(path):
@@ -61,14 +61,8 @@ def predict_file(path):
     Function to make prediction on a local file
     """
 
-    prediction_results = { "status" : "ok",
-                           "prediction": {} 
-                         }
-    
-    prediction = predict_resnet50.predict_complete_image(f.name, cfg.MODEL_PATH)
-    prediction_results["prediction"].update(prediction)
-    
-    return prediction_results 
+    message = 'Not implemented in the model (predict_file)'
+    return message
 
 
 def predict_data(image):
@@ -147,7 +141,6 @@ def train(train_args):
 
     # Clear possible pre-existing sessions. important!
     backend.clear_session()
-
 
     if (yaml.safe_load(train_args.augmentation)):
         params = train_resnet50.train_with_augmentation(
