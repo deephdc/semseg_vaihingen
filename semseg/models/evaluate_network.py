@@ -1,4 +1,4 @@
-# imports:
+# imports
 import semseg.config as cfg
 import model_generator
 import data_io as dio
@@ -28,7 +28,7 @@ def from_categorical(categorical_tensor):
 
 
 # function to generate a plot of the ground truth or network prediction:
-def create_colormap(label_matrix,title):
+def create_colormap(label_matrix,title, legend=False):
     # dictionary with mapping {label - color}:
     lc = {'surfaces':    (0.592, 0.647, 0.647),#'gray',
           'building':    (0.949, 0.109, 0.109),#'red',
@@ -44,7 +44,14 @@ def create_colormap(label_matrix,title):
                                  lc['tree'],
                                  lc['car'],
                                  lc['clutter']])
-    
+
+    if legend:
+        # Fake plots to create legend
+        for label in lc:
+            plt.plot(0, 0, "o", c=lc[label], label=label)
+        plt.subplots_adjust(right=0.75)
+        plt.legend(bbox_to_anchor=(1.04,1), loc="upper left")
+
     # generate and show the map
     plt.imshow(label_matrix, cmap=label_cmap)
     plt.title(title)
@@ -52,10 +59,11 @@ def create_colormap(label_matrix,title):
     
     plot_file = title.replace(' ', '_') + '.png'
     plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file))
+    plt.clf()
 
 
 # function to generate a plot of the ground truth or network prediction if there are only 5 classes in the image
-def create_colormap_no_clutter(label_matrix,title):
+def create_colormap_no_clutter(label_matrix,title, legend=False):
     # dictionary with mapping {label - color}:
     lc = {'surfaces':   'gray',
           'building':   'red',
@@ -70,6 +78,13 @@ def create_colormap_no_clutter(label_matrix,title):
                                  lc['tree'],
                                  lc['car']])
 
+    if legend:
+        # Fake plots to create legend
+        for label in lc:
+            plt.plot(0, 0, "o", c=lc[label], label=label)
+        plt.subplots_adjust(right=0.75)
+        plt.legend(bbox_to_anchor=(1.04,1), loc="upper left")
+
     # generate and show the map
     plt.imshow(label_matrix, cmap=label_cmap)
     plt.title(title)    
@@ -77,6 +92,7 @@ def create_colormap_no_clutter(label_matrix,title):
 
     plot_file = title.replace(' ', '_') + '.png'
     plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file))
+    plt.clf()
 
 
 # function to generate a plot of the wrong classified pixels
@@ -143,9 +159,9 @@ def predict_complete_image(patch_path, network_weight_file):
 
     # create a colormap of the ground truth:
     if num_labels_in_ground_truth == num_labels:
-        create_colormap(ground_truth,'Groundtruth')
+        create_colormap(ground_truth,'Groundtruth', legend=True)
     else:
-        create_colormap_no_clutter(ground_truth,'Groundtruth')
+        create_colormap_no_clutter(ground_truth,'Groundtruth', legend=True)
 
     print('[INFO] Load a trained FCN from {} ...'.format(network_weight_file))
     model = model_generator.generate_resnet50_fcn(use_pretraining=False)
@@ -182,7 +198,7 @@ def predict_complete_image(patch_path, network_weight_file):
     prediction[k:k + s, l:l + s] = net_predict(data, model, s, k, l)
 
     # create a colormap showing the networks predictions:
-    create_colormap(prediction,'Classification map')
+    create_colormap(prediction,'Classification map', legend=True)
 
     print('[INFO] Calculate error map ... ')
     # create a map, showing which pixels were predicted wrongly:
