@@ -16,7 +16,7 @@ from werkzeug.exceptions import BadRequest
 import semseg.config as cfg
 import semseg.models.train_resnet50_fcn as train_resnet50
 import semseg.models.evaluate_network as predict_resnet50
-import semseg.models.merge_maps as merge_maps 
+import semseg.models.create_resfiles as resfiles 
 
 from datetime import datetime
 
@@ -69,10 +69,13 @@ def predict_data(image):
     """
     Function to make prediction on an uploaded image file
     """
+    model = cfg.MODEL_PATH 
+    prediction_results = { "status" : "ok",
+                           "prediction": {} 
+                         }
     
     # Check and store data
     img_name = image['files'].filename
-    
     catch_data_error(img_name)
 
     f = open("/tmp/%s" % img_name, "w+")
@@ -81,14 +84,10 @@ def predict_data(image):
     print("Sored file (temporarily) at: {} \t Size: {}".format(f.name,
         os.path.getsize(f.name)))
 
-
-    prediction_results = { "status" : "ok",
-                           "prediction": {} 
-                         }
     prediction_results["prediction"].update( {"file_name" : img_name} ) 
-
-    model = cfg.MODEL_PATH 
     
+
+    # Perform prediction
     try: 
         # Clear possible pre-existing sessions. important!
         backend.clear_session()
@@ -100,11 +99,13 @@ def predict_data(image):
     finally:
         os.remove(f.name)
 
-    # Stream files back
-    result = merge_maps.merge_images()
-    return flask.send_file(filename_or_fp=result,
+    # Build result file and stream it back
+    result_image = resfiles.merge_images()
+    result_pdf = resfiles.create_pdf(result_image,prediction_results["prediction"])
+
+    return flask.send_file(filename_or_fp=result_pdf,
                            as_attachment=True,
-                           attachment_filename=os.path.basename(result))
+                           attachment_filename=os.path.basename(result_pdf))
 
 #    return prediction_results 
 
