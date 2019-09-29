@@ -123,8 +123,8 @@ def predict_url(*args):
 # Uncomment the following two lines
 # if you allow only authorized people to do training
 ###
-#import flaat
-#@flaat.login_required()
+import flaat
+@flaat.login_required()
 def train(train_args):
     """
     Train network
