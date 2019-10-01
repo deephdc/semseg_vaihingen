@@ -65,7 +65,7 @@ def predict_file(path):
     return message
 
 
-def predict_data(image):
+def predict_data(*args, **kwargs):
     """
     Function to make prediction on an uploaded image file
     """
@@ -74,30 +74,39 @@ def predict_data(image):
                            "prediction": {} 
                          }
     
+    imgs = []
+    filenames = [] 
+    
     # Check and store data
-    img_name = image['files'].filename
-    catch_data_error(img_name)
+    for arg in args:
+        files = arg['files']
+        if not isinstance(files, list):
+            files = [files]
+        for f in files:
+            imgs.append(f)
+            catch_data_error(f.filename) 
 
-    f = open("/tmp/%s" % img_name, "w+")
-    image['files'].save(f.name)
-    f.close
-    print("Sored file (temporarily) at: {} \t Size: {}".format(f.name,
+    for image in imgs:
+        image_name = image.filename
+        f = open("/tmp/%s" % image_name, "w+")
+        image.save(f.name)
+        f.close
+        filenames.append(f.name)
+        print("Stored file (temporarily) at: {} \t Size: {}".format(f.name,
         os.path.getsize(f.name)))
 
-    prediction_results["prediction"].update( {"file_name" : img_name} ) 
-    
+        prediction_results["prediction"].update( {"file_name" : image_name} ) 
+        # Perform prediction
+        try: 
+            # Clear possible pre-existing sessions. important!
+            backend.clear_session()
+            prediction = predict_resnet50.predict_complete_image(f.name, model)
+            prediction_results["prediction"].update(prediction)
 
-    # Perform prediction
-    try: 
-        # Clear possible pre-existing sessions. important!
-        backend.clear_session()
-        prediction = predict_resnet50.predict_complete_image(f.name, model)
-        prediction_results["prediction"].update(prediction)
-
-    except Exception as e:
-        raise e
-    finally:
-        os.remove(f.name)
+        except Exception as e:
+            raise e
+        finally:
+            os.remove(f.name)
 
     # Build result file and stream it back
     result_image = resfiles.merge_images()
