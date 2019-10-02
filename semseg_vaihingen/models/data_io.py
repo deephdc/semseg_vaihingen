@@ -1,9 +1,10 @@
 # imports:
 import h5py
-import sys
 import numpy as np
-from sys import argv
 from os import path
+
+import sys
+import argparse
 
 # load one of the vaihingen images, specified by image_number; by default only the first 3 channels are taken:
 def load_vaihingen_image(filename, image_number, only_three_channels=True, show_properties=False):
@@ -105,10 +106,10 @@ def load_data(name):
     return x, y
 
 
-def main(arguments):
+def main():
     
-    data_path = arguments[1]
-    output_path = arguments[2]
+    data_path = args.input_patches_path
+    output_path = args.datasets_path
 
     # files used for training:
     training_nums = [1, 3, 5, 7, 11, 13, 17, 21, 26, 28, 34, 37]
@@ -127,18 +128,36 @@ def main(arguments):
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--input_patches_path', type=str, required=True,
+                        help='Location of the input image patches \
+                        (e.g., /srv/semseg_vaihingen/data/raw/)')
+    parser.add_argument('--datasets_path', type=str, required=True,
+                        help='Location to write training and validation datasets \
+                        (e.g., /srv/semseg_vaihingen/data/)')
     
-    if len(sys.argv)<2:
-      print ''
-      print '***********************************'
-      print 'Two parameters need to be specified:'
-      print '1. Location of the input image patches (e.g., /homea/hpclab/train001/data/vaihingen/ )'
-      print '2. Location to write training and validation sets (e.g., /homea/hpclab/train002/semseg/vaihingen/ )'
-      print '***********************************'
+    if len(sys.argv) != 3:
+        print("")
+        print("[ERROR] Wrong number of parameters! See usage:\n")
+        parser.print_help()
+        sys.exit()
 
-      sys.exit()
+    args = parser.parse_args()
 
-    main(argv)
+###
+#    if len(sys.argv)<2:
+#      print ''
+#      print '***********************************'
+#      print 'Two parameters need to be specified:'
+#      print '1. Location of the input image patches (e.g., /homea/hpclab/train001/data/vaihingen/ )'
+#      print '2. Location to write training and validation sets (e.g., /homea/hpclab/train002/semseg/vaihingen/ )'
+#      print '***********************************'
+#
+#      sys.exit()
+###
+    
+    main()
 
 
 
