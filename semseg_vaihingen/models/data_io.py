@@ -62,7 +62,6 @@ def generate_dataset(data_path, image_numbers, overlap_factor):
     size = 256
 
     # specify filename and directory:
-    #file_directory = '/gpfs/gsstest/data/gabcav/semseg/vaihingen/'
     file_directory = data_path
     filename = 'vaihingen_'
     file_extension = '.hdf5'

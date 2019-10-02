@@ -1,5 +1,5 @@
 # imports
-import semseg.config as cfg
+import semseg_vaihingen.config as cfg
 import model_generator
 import data_io as dio
 
@@ -244,10 +244,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Evaluate the model')
     parser.add_argument('--patch_path', type=str,
                         help='Location of of the patch to test \
-                        (e.g., /srv/semseg/data/raw/vaihingen_15.hdf5 )')
+                        (e.g., /srv/semseg_vaihingen/data/raw/vaihingen_15.hdf5 )')
     parser.add_argument('--model', type=str,
                         help='Location of the trained network model \
-                        (e.g., /srv/semseg/models/resnet50_fcn_weights.hdf5)')
+                        (e.g., /srv/semseg_vaihingen/models/resnet50_fcn_weights.hdf5)')
 
     args = parser.parse_args()
 
