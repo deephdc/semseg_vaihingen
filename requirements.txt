@@ -11,6 +11,7 @@ astor==0.7.1
 backports.weakref==1.0.post1
 bleach==1.5.0
 enum34==1.1.6
+fpdf==1.7.2
 funcsigs==1.0.2
 futures==3.2.0
 gast==0.2.0
@@ -19,7 +20,7 @@ h5py==2.7.1
 html5lib==0.9999999
 Keras==2.2.2
 Keras-Applications==1.0.4
-Keras-Preprocessing==1.0.2
+Keras-Preprocessing>=1.0.2
 Markdown==3.0.1
 mock==2.0.0
 numpy==1.15.2
@@ -31,4 +32,3 @@ scipy==1.1.0
 six==1.11.0
 tensorboard>=1.8.0
 termcolor==1.1.0
-Werkzeug==0.14.1

@@ -6,7 +6,7 @@
 import logging
 from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
-import semseg.config as cfg
+import semseg_vaihingen.config as cfg
 
 
 def main(input_filepath, output_filepath):

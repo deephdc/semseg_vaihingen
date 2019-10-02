@@ -164,7 +164,7 @@ html_static_path = ['_static']
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'semsegdoc'
+htmlhelp_basename = 'semseg_vaihingendoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -184,7 +184,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
     ('index',
-     'semseg.tex',
+     'semseg_vaihingen.tex',
      u'2D semantic segmentation Documentation',
      u"G.Cavallaro (FZJ), M.Goetz (KIT), V.Kozlov (KIT)", 'manual'),
 ]
@@ -215,7 +215,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'semseg', u'2D semantic segmentation Documentation',
+    ('index', 'semseg_vaihingen', u'2D semantic segmentation Documentation',
      [u"G.Cavallaro (FZJ), M.Goetz (KIT), V.Kozlov (KIT)"], 1)
 ]
 
@@ -229,7 +229,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'semseg', u'2D semantic segmentation Documentation',
+    ('index', 'semseg_vaihingen', u'2D semantic segmentation Documentation',
      u"G.Cavallaro (FZJ), M.Goetz (KIT), V.Kozlov (KIT)", '2D semantic segmentation',
      '2D semantic segmentation (Vaihingen dataset)', 'Miscellaneous'),
 ]
