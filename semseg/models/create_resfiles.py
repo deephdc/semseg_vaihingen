@@ -6,7 +6,7 @@ in order to be able to transfer all of it as a single file.
 import os
 from PIL import Image
 from fpdf import FPDF
-import semseg.config as cfg
+import semseg_vaihingen.config as cfg
 
 # Input and result images from the segmentation
 files = ['{}/Input_image_patch.png'.format(cfg.DATA_DIR),

@@ -31,9 +31,9 @@ Project Organization
     │                             generated with `pip freeze > requirements.txt`
     ├── test-requirements.txt  <- The requirements file for the test environment
     │
-    ├── setup.py               <- makes project pip installable (pip install -e .) so semseg can be imported
-    ├── semseg    <- Source code for use in this project.
-    │   ├── __init__.py        <- Makes semseg a Python module
+    ├── setup.py               <- makes project pip installable (pip install -e .) so semseg_vaihingen can be imported
+    ├── semseg_vaihingen    <- Source code for use in this project.
+    │   ├── __init__.py        <- Makes semseg_vaihingen a Python module
     │   │
     │   ├── dataset            <- Scripts to download or generate data
     │   │   └── make_dataset.py

@@ -13,12 +13,12 @@ import flask
 from werkzeug.exceptions import BadRequest
 
 # import project's config.py
-import semseg.config as cfg
-import semseg.models.train_resnet50_fcn as train_resnet50
-import semseg.models.evaluate_network as predict_resnet50
-import semseg.models.create_resfiles as resfiles 
+import semseg_vaihingen.config as cfg
+import semseg_vaihingen.models.train_resnet50_fcn as train_resnet50
+import semseg_vaihingen.models.evaluate_network as predict_resnet50
+import semseg_vaihingen.models.create_resfiles as resfiles 
 
-from datetime import datetime
+#from datetime import datetime
 
 def get_metadata():
     """

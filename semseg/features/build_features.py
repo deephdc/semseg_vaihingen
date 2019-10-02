@@ -4,4 +4,4 @@ Feature building
 """
 
 # import project config.py
-import semseg.config as cfg
+import semseg_vaihingen.config as cfg

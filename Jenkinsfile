@@ -12,8 +12,8 @@ pipeline {
     environment {
         author_name = "G.Cavallaro (FZJ), M.Goetz (KIT), V.Kozlov (KIT)"
         author_email = "valentin.kozlov@kit.edu"
-        app_name = "semseg"
-        job_location = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-semseg/${env.BRANCH_NAME}"
+        app_name = "semseg_vaihingen"
+        job_location = "Pipeline-as-code/DEEP-OC-org/DEEP-OC-semseg_vaihingen/${env.BRANCH_NAME}"
     }
 
     stages {
