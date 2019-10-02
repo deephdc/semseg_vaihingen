@@ -41,7 +41,7 @@ def get_metadata():
 
     for line in pkg.get_metadata_lines("PKG-INFO"):
         for par in meta:
-            if line.startswith(par):
+            if line.startswith(par+":"):
                 _, value = line.split(": ", 1)
                 meta[par] = value
 
