@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+<<<<<<< HEAD
 #
 # Copyright (c) 2017 - 2019 Karlsruhe Institute of Technology - Steinbuch Centre for Computing
 # This code is distributed under the MIT License
@@ -23,11 +24,25 @@ class TestModelMethods(unittest.TestCase):
     def test_model_metadata_type(self):
         """
         Test that get_metadata() returns list
+=======
+import unittest
+import semseg_vaihingen.models.deepaas_api as deepaas_api
+
+class TestModelMethods(unittest.TestCase):
+    
+    def setUp(self):
+        self.meta = deepaas_api.get_metadata()
+        
+    def test_model_metadata_type(self):
+        """
+        Test that get_metadata() returns dict
+>>>>>>> 5b64f6f20f7c38d70094996add71f8417f823eac
         """
         self.assertTrue(type(self.meta) is dict)
         
     def test_model_metadata_values(self):
         """
+<<<<<<< HEAD
         Test that get_metadata() returns 
         right values (subset)
         """
@@ -77,3 +92,15 @@ class TestModelMethods(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+=======
+        Test that get_metadata() returns right values (subset)
+        """
+        self.assertEqual(self.meta['Name'].replace('-','').replace('_',''),
+                        'semseg_vaihingen'.replace('-','').replace('_',''))
+        self.assertEqual(self.meta['Author'], 'G.Cavallaro (FZJ), M.Goetz (KIT), V.Kozlov (KIT)')
+        self.assertEqual(self.meta['Author-email'], 'valentin.kozlov@kit.edu')
+
+
+if __name__ == '__main__':
+    unittest.main()
+>>>>>>> 5b64f6f20f7c38d70094996add71f8417f823eac
