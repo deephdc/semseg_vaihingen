@@ -9,7 +9,8 @@ from os import path
 BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
 
 DATA_DIR = path.join(BASE_DIR,'data') # Location of model data and output files
-MODEL_PATH = path.join(BASE_DIR,'models','resnet50_fcn_weights.hdf5') # Location + name of the output model 
+MODEL_PATH = path.join(BASE_DIR,'models','resnet50_fcn_weights.hdf5') # Location + name of the output model
+MODEL_REMOTE_PUBLIC = 'https://nc.deep-hybrid-datacloud.eu/s/eTqJexZ5PcBxXR6/download?path='
 
 train_args = { 'augmentation': {'default': False,
                                  'choices': [False, True],

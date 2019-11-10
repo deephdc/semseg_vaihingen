@@ -153,6 +153,7 @@ def predict_complete_image(patch_path, network_weight_file):
 
     num_labels = 6
     num_labels_in_ground_truth = np.max(ground_truth)
+    print("[DEBUG] num_labels={}, num_labels_ground_truth={}".format(num_labels, num_labels_in_ground_truth))
 
     # plot the input:
     create_colormap(data,'Input image patch')
@@ -197,9 +198,6 @@ def predict_complete_image(patch_path, network_weight_file):
     l = im_w - s
     prediction[k:k + s, l:l + s] = net_predict(data, model, s, k, l)
 
-    # create a colormap showing the networks predictions:
-    create_colormap(prediction,'Classification map', legend=True)
-
     print('[INFO] Calculate error map ... ')
     # create a map, showing which pixels were predicted wrongly:
     error_map = np.zeros((im_h, im_w))
@@ -223,16 +221,24 @@ def predict_complete_image(patch_path, network_weight_file):
     # calculate the confusion matrix:
     confusion, label_accuracy = analyze_result(ground_truth, prediction, 6)
     print_labelwise_accuracy(confusion, label_accuracy)
+    print('[INFO] Confusion matrix: ')
+    print(confusion)
 
     # store the % of correct predicted pixels per label in a dict
     results["label_accuracy"] = {}
     labels = ['Impervious surfaces', 'Building', 'Low vegetation', 'Tree', 'Car ', 'Clutter/background']
+    i_not_found = 1
     for i, label in enumerate(labels):
         results["label_accuracy"][label] = "{}%".format(100*label_accuracy[i])
+        if label_accuracy[i] == 0. :
+            print("[DEBUG] Found one not-predicted label: {}".format(label))
+            print("[DEBUG] Adding an artificial point for correct color mapping..")
+            prediction[im_h - i_not_found*5, im_w - i_not_found*5] = i + 1.
+            i_not_found += 1
 
-    print('[INFO] Confusion matrix: ')
-    print(confusion)
-
+    # create a colormap showing the networks predictions:  
+    create_colormap(prediction,'Classification map', legend=True)
+ 
     return results
 
 

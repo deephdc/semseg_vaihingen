@@ -7,6 +7,7 @@ import json
 import yaml
 import argparse
 import pkg_resources
+import subprocess
 from keras import backend
 
 import flask
@@ -19,6 +20,51 @@ import semseg_vaihingen.models.evaluate_network as predict_resnet50
 import semseg_vaihingen.models.create_resfiles as resfiles 
 
 #from datetime import datetime
+
+def byte2str(str_in):
+    '''
+    Simple function to decode a byte string (str_in).
+    In case of a normal string, return is unchanged
+    '''
+    try:
+        str_in = str_in.decode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+    
+    return str_in 
+    
+def rclone_copy(src_path, dest_path, cmd='copy',):
+    '''
+    Wrapper around rclone to copy files
+    :param src_path: path of what to copy. in the case of "copyurl" path at the remote
+    :param dest_path: path where to copy
+    :param cmd: how to copy, "copy" or "copyurl"
+    :return: output message and a possible error
+    '''
+
+    if cmd == 'copy':
+        command = (['rclone', 'copy', '--progress', src_path, dest_path])
+    elif cmd == 'copyurl':
+        src_path = '/' + src_path.lstrip('/')
+        src_dir, src_file = os.path.split(src_path)
+        remote_link = cfg.MODEL_REMOTE_PUBLIC + src_dir + '&files=' + src_file
+        print("[INFO] Trying to download {} from {}".format(src_file,
+                                                            remote_link))
+        command = (['rclone', 'copyurl', '--progress', remote_link, dest_path])
+    else:
+        message = "[ERROR] Wrong 'cmd' value! Allowed 'copy', 'copyurl', received: " + cmd
+        raise Exception(message)
+
+    try:
+        result = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, error = result.communicate()
+    except OSError as e:
+        output, error = None, e
+        
+    output = byte2str(output)
+    error = byte2str(error)
+    
+    return output, error
 
 def get_metadata():
     """
@@ -100,6 +146,18 @@ def predict_data(*args, **kwargs):
         try: 
             # Clear possible pre-existing sessions. important!
             backend.clear_session()
+            if not os.path.exists(cfg.MODEL_PATH):
+                model_dir, model_file = os.path.split(cfg.MODEL_PATH)
+                remote_src_path = os.path.join('models', model_file)
+                print("[INFO] File {} is not found.".format(cfg.MODEL_PATH))
+                output, error = rclone_copy(src_path=remote_src_path,
+                                            dest_path=cfg.MODEL_PATH,
+                                            cmd='copyurl')
+                if error:
+                    message = "[ERROR] File was not properly copied. rclone returned: "
+                    message = message + error
+                    raise Exception(message)            
+            
             prediction = predict_resnet50.predict_complete_image(f.name, model)
             prediction_results["prediction"].update(prediction)
 
