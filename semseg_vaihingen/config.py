@@ -36,5 +36,13 @@ train_args = { 'augmentation': {'default': False,
                               }
 }
 
+predict_args = {'model_retrieve':   {'default': False,
+                             'choices': [False, True],
+                             'help': 'Force model update from the remote repository',
+                             'required': False
+                           },
+
+}
+
 #    parser.add_argument('--log', type=str,
 #                        help='Location + name of the csv log file')  

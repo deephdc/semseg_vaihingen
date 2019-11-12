@@ -146,10 +146,11 @@ def predict_data(*args, **kwargs):
         try: 
             # Clear possible pre-existing sessions. important!
             backend.clear_session()
-            if not os.path.exists(cfg.MODEL_PATH):
+            model_retrieve = yaml.safe_load(arg.model_retrieve)
+            if not os.path.exists(cfg.MODEL_PATH) or model_retrieve:
                 model_dir, model_file = os.path.split(cfg.MODEL_PATH)
                 remote_src_path = os.path.join('models', model_file)
-                print("[INFO] File {} is not found.".format(cfg.MODEL_PATH))
+                print("[INFO] File {} will be retrieved from the remote.".format(cfg.MODEL_PATH))
                 output, error = rclone_copy(src_path=remote_src_path,
                                             dest_path=cfg.MODEL_PATH,
                                             cmd='copyurl')
@@ -250,6 +251,20 @@ def get_train_args():
             val['choices'] = [str(item) for item in val['choices']]
 
     return train_args
+
+
+# !!! deepaas>=0.5.0 calls get_test_args() to get args for 'predict'
+def get_test_args():
+    predict_args = cfg.predict_args
+
+    # convert default values and possible 'choices' into strings
+    for key, val in predict_args.items():
+        val['default'] = str(val['default'])  # yaml.safe_dump(val['default']) #json.dumps(val['default'])
+        if 'choices' in val:
+            val['choices'] = [str(item) for item in val['choices']]
+        #print(val['default'], type(val['default']))
+
+    return predict_args
 
 
 # during development it might be practical 
