@@ -29,7 +29,7 @@ class TestModelMethods(unittest.TestCase):
         """
         self.assertEqual(self.meta['Name'].replace('-','_'),
                         'semseg_vaihingen'.replace('-','_'))
-        self.assertEqual(self.meta['Author'], 'G.Cavallaro (FZJ), M.Goetz (KIT), V.Kozlov (KIT)')
+        self.assertEqual(self.meta['Author'], 'G.Cavallaro (FZJ), M.Goetz (KIT), V.Kozlov (KIT), A.Grupp (KIT)')
         self.assertEqual(self.meta['Author-email'], 'valentin.kozlov@kit.edu')
 
 

@@ -44,6 +44,4 @@ predict_args = {'model_retrieve':   {'default': False,
                            },
 
 }
-
-#    parser.add_argument('--log', type=str,
-#                        help='Location + name of the csv log file')  
+ 

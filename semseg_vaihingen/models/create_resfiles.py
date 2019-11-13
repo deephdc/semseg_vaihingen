@@ -17,9 +17,23 @@ files_vaihingen = ['{}/Input_image_patch.png'.format(cfg.DATA_DIR),
                    '{}/Classification_map.png'.format(cfg.DATA_DIR),
                    '{}/Error_map.png'.format(cfg.DATA_DIR)]
 
+class semsegPDF(FPDF):
+    def footer(self):
+        """
+        Footer on each page
+        """
+        # print footer
+        # position footer at 15mm from the bottom
+        self.set_y(-15)
+        # set the font, I=italic
+        self.set_font("Arial", style="I", size=8)
+        # display the page number and center it
+        pageNum = "Page %s/{nb}" % self.page_no()
+        self.cell(0, 10, pageNum, align="C")
+
 # Merge images and add a color legend
 def merge_images(data_type):
-    result = Image.new("RGB", (1280, 960))
+    result = Image.new("RGB", (1280, 960), color=(255,255,255))
     if data_type == 'vaihingen':
         files = files_vaihingen
     else:
@@ -41,10 +55,37 @@ def merge_images(data_type):
 
 
 # Put images and accuracy information together in one pdf file
-def create_pdf(image, prediction, data_type):
-    pdf = FPDF()
+def create_pdf(prediction, data_type):
+    pdf = semsegPDF()
+    pdf.alias_nb_pages()
+
     pdf.add_page()
-    pdf.image(image, 0, 0, w=210)
+    pdf.set_font('Arial', 'B', 16)
+    pdf.cell(210, 16, 'Results', ln=1)
+
+    if data_type == 'vaihingen':
+        files = files_vaihingen
+    else:
+        files = files_any
+    
+    x_next = 10.
+    y_next = 50.
+    
+    for image_path in files:
+        image = Image.open(image_path)
+        #image.thumbnail((640, 480), Image.ANTIALIAS)
+        width, height = image.size
+        print("[DEBUG] image_size: ", image.size)
+        # convert pixel in mm with 1px=0.264583 mm
+        width, height = float(width * 0.264583), float(height * 0.264583)
+        if (x_next + width) < 200.:
+            y_next = 50.
+        else:
+            x_next = 10.
+            
+        pdf.image(image_path, x_next, y_next, h=70)
+        x_next += width + 10.
+        y_next += height + 10.
 
     pdf.add_page()
 
@@ -59,8 +100,7 @@ def create_pdf(image, prediction, data_type):
                    'summary': ['Total pixels:', 'total_pixels']}
                
     cell_width = [55, 35, 35]
-    
-    
+   
     if data_type == 'vaihingen':
         summary_print = summary_vaihingen
     else:

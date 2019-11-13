@@ -42,28 +42,31 @@ def from_categorical(categorical_tensor):
 # function to generate a plot of the ground truth or network prediction:
 def create_colormap(label_matrix, title, labels=glob_label_list, 
                     colormap=True, legend=False):
+
+    fig, ax1 = plt.subplots()
     if legend:
+        #fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
         # Fake plots to create legend
         for label in labels:
-            plt.plot(0, 0, "o", c=glob_label_color_dict[label], label=label)
+            ax1.plot(0, 0, "o", c=glob_label_color_dict[label], label=label)
         plt.subplots_adjust(right=0.75)
-        plt.legend(bbox_to_anchor=(1.04,1), loc="upper left")
-
+        ax1.legend(bbox_to_anchor=(1.04,1), loc="upper left")
+    
     if colormap:
         # create custom colormap:
         colors = [ glob_label_color_dict[label] for label in labels ]
         label_cmap = ListedColormap(colors)
     
         # generate and show the map
-        plt.imshow(label_matrix, cmap=label_cmap)
+        ax1.imshow(label_matrix, cmap=label_cmap)
     else:
-        plt.imshow(label_matrix)
+        ax1.imshow(label_matrix)
                
     plt.title(title)
     #plt.show()
     
     plot_file = title.replace(' ', '_') + '.png'
-    plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file))
+    plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file), bbox_inches='tight')
     plt.clf()
 
 # function to generate a plot of the wrong classified pixels
