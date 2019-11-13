@@ -42,14 +42,6 @@ def from_categorical(categorical_tensor):
 # function to generate a plot of the ground truth or network prediction:
 def create_colormap(label_matrix, title, labels=glob_label_list, 
                     colormap=True, legend=False):
-    # dictionary with mapping {label - color}:
-    #lc = {'surfaces':    (0.592, 0.647, 0.647),#'gray',
-    #      'building':    (0.949, 0.109, 0.109),#'red',
-    #      'vegetation':  (0.619, 0.878, 0.627),#'lightgreen',
-    #      'tree':        (0.223, 0.498, 0.231),#'green',
-    #      'car':         (0.564, 0.298, 0.482),#'purple',
-    #      'clutter':     (0,0,0)}#'black'
-
     if legend:
         # Fake plots to create legend
         for label in labels:
@@ -110,10 +102,14 @@ def print_labelwise_accuracy(confusion, label_accuracy):
     overall = np.sum(confusion, axis=1)
 
     print('')
+    print("[INFO] Results:")
     print('Labelwise accuracy: ')
-    print('Labels              \t pixels     \t accuracy')
+    print('{:20s} \t {:>10s} \t {:>10s}'.format("Labels", "pixels", "accuracy"))
+    print("-".rjust(50,"-"))
     for i, label in enumerate(glob_label_list):
-        print('{:20s} \t {:10d}\t {}%'.format(label, overall[i], 100*label_accuracy[i]))
+        print('{:20s} \t {:10d} \t {:10.4f}%'.format(label, 
+                                                     overall[i], 
+                                                     100.*label_accuracy[i]))
     print('')
 
 
@@ -127,7 +123,6 @@ def predict_complete_image(patch_path, network_weight_file):
     # plot the input:
     create_colormap(data, title='Input image patch', colormap=False)
 
-    num_labels = 6 # max number of labels
     num_labels_in_ground_truth = int(np.max(ground_truth))
     label_indecies = np.arange(num_labels_in_ground_truth).tolist()
     labels_in_ground_truth = glob_label_list[label_indecies]
@@ -198,7 +193,7 @@ def predict_complete_image(patch_path, network_weight_file):
     # calculate the confusion matrix:
     confusion, label_accuracy = analyze_result(ground_truth, 
                                                prediction, 
-                                               num_labels)
+                                               cfg.NUM_LABELS)
     print_labelwise_accuracy(confusion, label_accuracy)
     print('[INFO] Confusion matrix: ')
     print(confusion)
@@ -206,7 +201,7 @@ def predict_complete_image(patch_path, network_weight_file):
     # store the % of correct predicted pixels per label in a dict
     results["label_accuracy"] = {}
     for i, label in enumerate(glob_label_list):
-        results["label_accuracy"][label] = "{}%".format(100*label_accuracy[i])
+        results["label_accuracy"][label] = "{}%".format(100.*label_accuracy[i])
 
     num_labels_in_prediction = int(np.max(prediction))
     label_indecies = np.arange(num_labels_in_prediction).tolist()
@@ -217,6 +212,77 @@ def predict_complete_image(patch_path, network_weight_file):
  
     return results
 
+# function to apply a trained network to a whole image:
+def predict_complete_image_jpg(patch_path, network_weight_file):
+
+    data = dio.load_image_jpg(patch_path)
+    print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
+    total_pixels = data.shape[0]*data.shape[1]
+
+    # plot the input:
+    create_colormap(data, title='Input image patch', colormap=False)
+
+    print('[INFO] Load a trained FCN from {} ...'.format(network_weight_file))
+    model = model_generator.generate_resnet50_fcn(use_pretraining=False)
+    model.load_weights(network_weight_file)
+
+    # preprocess (center, normalize) the input, using Keras' build in routine:
+    data = keras.applications.resnet50.preprocess_input(data.astype(np.float32), mode='tf')
+
+    # define image size and network input/output size:
+    im_h = data.shape[0]
+    im_w = data.shape[1]
+    s = 256
+
+    print('[INFO] Apply network to image ... ')
+    # iterate over the complete image:
+    prediction = np.zeros((im_h, im_w))
+    k = l = 0
+    while k+s < im_h:
+        while l+s < im_w:
+            prediction[k:k+s, l:l+s] = net_predict(data, model, s, k, l)
+            l += s
+        # right border:
+        l = im_w - s
+        prediction[k:k + s, l:l + s] = net_predict(data, model, s, k, l)
+        k += s
+        l = 0
+    # bottom border:
+    k = im_h - s
+    while l + s < im_w:
+        prediction[k:k + s, l:l + s] = net_predict(data, model, s, k, l)
+        l += s
+    # right border:
+    l = im_w - s
+    prediction[k:k + s, l:l + s] = net_predict(data, model, s, k, l)
+
+    num_labels_in_prediction = int(np.max(prediction))
+    label_indecies = np.arange(num_labels_in_prediction).tolist()
+    labels_in_prediction = glob_label_list[label_indecies]
+    # create a colormap showing the networks predictions:  
+    create_colormap(prediction, title='Classification map', 
+                    labels = labels_in_prediction, legend=True)
+
+    results = { "total_pixels" : total_pixels,
+                "label_pixels" : {},
+                "label_pixels_fraction": {}
+              }
+    for i, label in enumerate(glob_label_list):
+        label_sum = (prediction == float(i)).sum()
+        results["label_pixels"][label] = label_sum
+        results["label_pixels_fraction"][label] = np.round(
+                                                label_sum/float(total_pixels),
+                                                5)
+
+    print("[INFO] Results:")
+    print('{:20s} \t {:>12s} \t {:>8s}'.format("Labels", "pixels", "fraction"))
+    print("-".rjust(48,"-"))
+    for label, value in results["label_pixels"].items():
+        print('{:20s}: \t {:12d} \t {:8f}'.format(label, value, 
+                                      results["label_pixels_fraction"][label]))
+    print('{:20s}: \t {:12d}'.format("Total pixels", results["total_pixels"]))
+ 
+    return results
 
 def main():
     res = predict_complete_image(args.patch_path, args.model)

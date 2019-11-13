@@ -130,7 +130,7 @@ def predict_data(*args, **kwargs):
             files = [files]
         for f in files:
             imgs.append(f)
-            catch_data_error(f.filename) 
+            #catch_data_error(f.filename) 
 
     for image in imgs:
         image_name = image.filename
@@ -158,8 +158,24 @@ def predict_data(*args, **kwargs):
                     message = "[ERROR] File was not properly copied. rclone returned: "
                     message = message + error
                     raise Exception(message)            
-            
-            prediction = predict_resnet50.predict_complete_image(f.name, model)
+
+            # Error catch: wrong image format
+            filename, ext = os.path.splitext(f.name)
+            ext = ext.lower()
+            print("[DEBUG] filename: {}, ext: {}".format(filename, ext))
+            data_type = 'any'
+            if ext == '.hdf5' and "vaihingen_" in filename:
+                prediction = predict_resnet50.predict_complete_image(f.name, 
+                                                                     model)
+                data_type = 'vaihingen'
+            elif ( ext == '.jpeg' or ext == '.jpg' or ext == '.png' 
+                   or ext == '.tif' or ext == '.tiff' ):
+                prediction = predict_resnet50.predict_complete_image_jpg(f.name, 
+                                                                         model)
+            else:
+                raise BadRequest(""" [ERROR] Image format error: \
+                    Only '.hdf5', '.jpg', '.png', or 'tif' files are allowed. """)
+
             prediction_results["prediction"].update(prediction)
 
         except Exception as e:
@@ -168,8 +184,10 @@ def predict_data(*args, **kwargs):
             os.remove(f.name)
 
     # Build result file and stream it back
-    result_image = resfiles.merge_images()
-    result_pdf = resfiles.create_pdf(result_image,prediction_results["prediction"])
+    result_image = resfiles.merge_images(data_type)
+    result_pdf = resfiles.create_pdf(result_image,
+                                     prediction_results["prediction"],
+                                     data_type=data_type)
 
     return flask.send_file(filename_or_fp=result_pdf,
                            as_attachment=True,
