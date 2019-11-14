@@ -228,6 +228,19 @@ def train(train_args):
 
     # Clear possible pre-existing sessions. important!
     backend.clear_session()
+    
+    # check if vaihingen_train.hdf5 and vaihingen_val.hdf5 exist locally,
+    # if not -> download them from the REMOTE_STORAGE
+    training_data = os.path.join(cfg.DATA_DIR, cfg.TRAINING_DATA)
+    validation_data = os.path.join(cfg.DATA_DIR, cfg.VALIDATION_DATA)
+    remote_data_storage = os.path.join(cfg.REMOTE_STORAGE, 'data')
+    if not (os.path.exists(training_data) or os.path.exists(validation_data)):
+        print("[INFO] Either %s or %s NOT found locally, download them from %s" % 
+              (training_data, validation_data, remote_data_storage))
+        output, error = rclone_copy(remote_data_storage, cfg.DATA_DIR)
+        if error:
+            message = "[ERROR] training data not copied. rclone returned: " + error
+            raise Exception(message)
 
     if (yaml.safe_load(train_args.augmentation)):
         params = train_resnet50.train_with_augmentation(
@@ -251,6 +264,18 @@ def train(train_args):
                                                         default=str))
 
     print("Run results: " + str(run_results))
+
+    # REMOTE_MODELS_UPLOAD is defined in config.py #vk
+    upload_back = yaml.safe_load(train_args.upload_back)
+    if(upload_back and os.path.exists(cfg.MODEL_PATH)):
+        weights_file = os.path.split(cfg.MODEL_PATH)
+        output, error = rclone_copy(cfg.MODEL_PATH,
+                                    os.path.join(cfg.REMOTE_MODELS_UPLOAD, weights_file))
+        if error:
+            print("[ERROR] rclone returned: {}".format(error))
+    else:
+        print("[ERROR] Created weights file, %s, was NOT uploaded!" % cfg.MODEL_PATH)
+
     return run_results
 
 
