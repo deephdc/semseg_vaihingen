@@ -41,7 +41,7 @@ train_args = { 'augmentation': {'default': False,
                               },
                'upload_back': {'default': False,
                                'choices': [False, True],
-                               'help': 'Either upload a trained graph back to the remote storage (True) or not (False, default)',
+                               'help': 'Either upload a trained model back to the remote storage (True) or not (False, default)',
                                'required': False
                               },
 }

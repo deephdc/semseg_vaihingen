@@ -268,7 +268,7 @@ def train(train_args):
     # REMOTE_MODELS_UPLOAD is defined in config.py #vk
     upload_back = yaml.safe_load(train_args.upload_back)
     if(upload_back and os.path.exists(cfg.MODEL_PATH)):
-        weights_file = os.path.split(cfg.MODEL_PATH)
+        _, weights_file = os.path.split(cfg.MODEL_PATH)
         output, error = rclone_copy(cfg.MODEL_PATH,
                                     os.path.join(cfg.REMOTE_MODELS_UPLOAD, weights_file))
         if error:
