@@ -14,6 +14,18 @@ from matplotlib.colors import ListedColormap
 import os, re
 import argparse
 
+# label list
+glob_label_list = np.array(['Impervious surfaces', 'Building',
+                            'Low vegetation', 'Tree',
+                            'Car', 'Clutter/Background'])
+
+# dictionary with mapping {label - color}:
+glob_label_color_dict = {'Impervious surfaces':'gray',
+                         'Building':           'red',
+                         'Low vegetation':     'lightgreen',
+                         'Tree':               'green',
+                         'Car':                'purple',
+                         'Clutter/Background': 'black' }
 
 # calculate the networks prediction at a given window of the image:
 def net_predict(data, model, s, k, l):
@@ -28,72 +40,35 @@ def from_categorical(categorical_tensor):
 
 
 # function to generate a plot of the ground truth or network prediction:
-def create_colormap(label_matrix,title, legend=False):
-    # dictionary with mapping {label - color}:
-    lc = {'surfaces':    (0.592, 0.647, 0.647),#'gray',
-          'building':    (0.949, 0.109, 0.109),#'red',
-          'vegetation':  (0.619, 0.878, 0.627),#'lightgreen',
-          'tree':        (0.223, 0.498, 0.231),#'green',
-          'car':         (0.564, 0.298, 0.482),#'purple',
-          'clutter':     (0,0,0)}#'black'
+def create_colormap(label_matrix, title, labels=glob_label_list, 
+                    colormap=True, legend=False):
 
-    # create custom colormap:
-    label_cmap = ListedColormap([lc['surfaces'],
-                                 lc['building'],
-                                 lc['vegetation'],
-                                 lc['tree'],
-                                 lc['car'],
-                                 lc['clutter']])
-
+    fig, ax1 = plt.subplots()
     if legend:
+        #fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
         # Fake plots to create legend
-        for label in lc:
-            plt.plot(0, 0, "o", c=lc[label], label=label)
+        for label in labels:
+            ax1.plot(0, 0, "o", c=glob_label_color_dict[label], label=label)
         plt.subplots_adjust(right=0.75)
-        plt.legend(bbox_to_anchor=(1.04,1), loc="upper left")
-
-    # generate and show the map
-    plt.imshow(label_matrix, cmap=label_cmap)
+        ax1.legend(bbox_to_anchor=(1.04,1), loc="upper left")
+    
+    if colormap:
+        # create custom colormap:
+        colors = [ glob_label_color_dict[label] for label in labels ]
+        label_cmap = ListedColormap(colors)
+    
+        # generate and show the map
+        ax1.imshow(label_matrix, cmap=label_cmap)
+    else:
+        ax1.imshow(label_matrix)
+               
     plt.title(title)
     #plt.show()
     
     plot_file = title.replace(' ', '_') + '.png'
-    plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file))
+    plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file), 
+                dpi=225, bbox_inches='tight')
     plt.clf()
-
-
-# function to generate a plot of the ground truth or network prediction if there are only 5 classes in the image
-def create_colormap_no_clutter(label_matrix,title, legend=False):
-    # dictionary with mapping {label - color}:
-    lc = {'surfaces':   'gray',
-          'building':   'red',
-          'vegetation': 'lightgreen',
-          'tree':       'green',
-          'car':        'purple'}
-
-    # create custom colormap:
-    label_cmap = ListedColormap([lc['surfaces'],
-                                 lc['building'],
-                                 lc['vegetation'],
-                                 lc['tree'],
-                                 lc['car']])
-
-    if legend:
-        # Fake plots to create legend
-        for label in lc:
-            plt.plot(0, 0, "o", c=lc[label], label=label)
-        plt.subplots_adjust(right=0.75)
-        plt.legend(bbox_to_anchor=(1.04,1), loc="upper left")
-
-    # generate and show the map
-    plt.imshow(label_matrix, cmap=label_cmap)
-    plt.title(title)    
-    #plt.show()
-
-    plot_file = title.replace(' ', '_') + '.png'
-    plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file))
-    plt.clf()
-
 
 # function to generate a plot of the wrong classified pixels
 def create_errormap(error_matrix,title):
@@ -128,19 +103,17 @@ def analyze_result(ground_truth, prediction, num_labels):
 
 # print the labelwise accuracy
 def print_labelwise_accuracy(confusion, label_accuracy):
-    labels = ['Impervious surfaces    ',
-              'Building               ',
-              'Low vegetation         ',
-              'Tree                   ',
-              'Car                    ',
-              'Clutter/background     ']
     overall = np.sum(confusion, axis=1)
 
     print('')
+    print("[INFO] Results:")
     print('Labelwise accuracy: ')
-    print('Labels             \t\t pixels     \t accuracy')
-    for i, label in enumerate(labels):
-        print('{} \t {}\t\t {}%'.format(label, overall[i], 100*label_accuracy[i]))
+    print('{:20s} \t {:>10s} \t {:>10s}'.format("Labels", "pixels", "accuracy"))
+    print("-".rjust(50,"-"))
+    for i, label in enumerate(glob_label_list):
+        print('{:20s} \t {:10d} \t {:10.4f}%'.format(label, 
+                                                     overall[i], 
+                                                     100.*label_accuracy[i]))
     print('')
 
 
@@ -151,17 +124,21 @@ def predict_complete_image(patch_path, network_weight_file):
     data, ground_truth = dio.load_vaihingen_image(patch_path, image_number)
     print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
 
-    num_labels = 6
-    num_labels_in_ground_truth = np.max(ground_truth)
-
     # plot the input:
-    create_colormap(data,'Input image patch')
+    create_colormap(data, title='Input image patch', colormap=False)
+
+    num_labels_in_ground_truth = int(np.max(ground_truth))
+    label_indecies = np.arange(num_labels_in_ground_truth).tolist()
+    labels_in_ground_truth = glob_label_list[label_indecies]
+    print("[DEBUG] label indecies: {}".format(label_indecies))
+    print("[DEBUG] num_labels_ground_truth={}, labels={}".format(
+                                                   num_labels_in_ground_truth,
+                                                   labels_in_ground_truth))
 
     # create a colormap of the ground truth:
-    if num_labels_in_ground_truth == num_labels:
-        create_colormap(ground_truth,'Groundtruth', legend=True)
-    else:
-        create_colormap_no_clutter(ground_truth,'Groundtruth', legend=True)
+    create_colormap(ground_truth, title='Groundtruth',
+                    labels=labels_in_ground_truth,
+                    colormap=True, legend=True)
 
     print('[INFO] Load a trained FCN from {} ...'.format(network_weight_file))
     model = model_generator.generate_resnet50_fcn(use_pretraining=False)
@@ -197,9 +174,6 @@ def predict_complete_image(patch_path, network_weight_file):
     l = im_w - s
     prediction[k:k + s, l:l + s] = net_predict(data, model, s, k, l)
 
-    # create a colormap showing the networks predictions:
-    create_colormap(prediction,'Classification map', legend=True)
-
     print('[INFO] Calculate error map ... ')
     # create a map, showing which pixels were predicted wrongly:
     error_map = np.zeros((im_h, im_w))
@@ -221,20 +195,98 @@ def predict_complete_image(patch_path, network_weight_file):
     results["overall_accuracy"] = '%0.2f' % overall_acc
 
     # calculate the confusion matrix:
-    confusion, label_accuracy = analyze_result(ground_truth, prediction, 6)
+    confusion, label_accuracy = analyze_result(ground_truth, 
+                                               prediction, 
+                                               cfg.NUM_LABELS)
     print_labelwise_accuracy(confusion, label_accuracy)
-
-    # store the % of correct predicted pixels per label in a dict
-    results["label_accuracy"] = {}
-    labels = ['Impervious surfaces', 'Building', 'Low vegetation', 'Tree', 'Car ', 'Clutter/background']
-    for i, label in enumerate(labels):
-        results["label_accuracy"][label] = "{}%".format(100*label_accuracy[i])
-
     print('[INFO] Confusion matrix: ')
     print(confusion)
 
+    # store the % of correct predicted pixels per label in a dict
+    results["label_accuracy"] = {}
+    for i, label in enumerate(glob_label_list):
+        results["label_accuracy"][label] = "{}%".format(100.*label_accuracy[i])
+
+    num_labels_in_prediction = int(np.max(prediction))
+    label_indecies = np.arange(num_labels_in_prediction).tolist()
+    labels_in_prediction = glob_label_list[label_indecies]
+    # create a colormap showing the networks predictions:  
+    create_colormap(prediction, title='Classification map', 
+                    labels = labels_in_prediction, legend=True)
+ 
     return results
 
+# function to apply a trained network to a whole image:
+def predict_complete_image_jpg(patch_path, network_weight_file):
+
+    data = dio.load_image_jpg(patch_path)
+    print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
+    total_pixels = data.shape[0]*data.shape[1]
+
+    # plot the input:
+    create_colormap(data, title='Input image patch', colormap=False)
+
+    print('[INFO] Load a trained FCN from {} ...'.format(network_weight_file))
+    model = model_generator.generate_resnet50_fcn(use_pretraining=False)
+    model.load_weights(network_weight_file)
+
+    # preprocess (center, normalize) the input, using Keras' build in routine:
+    data = keras.applications.resnet50.preprocess_input(data.astype(np.float32), mode='tf')
+
+    # define image size and network input/output size:
+    im_h = data.shape[0]
+    im_w = data.shape[1]
+    s = 256
+
+    print('[INFO] Apply network to image ... ')
+    # iterate over the complete image:
+    prediction = np.zeros((im_h, im_w))
+    k = l = 0
+    while k+s < im_h:
+        while l+s < im_w:
+            prediction[k:k+s, l:l+s] = net_predict(data, model, s, k, l)
+            l += s
+        # right border:
+        l = im_w - s
+        prediction[k:k + s, l:l + s] = net_predict(data, model, s, k, l)
+        k += s
+        l = 0
+    # bottom border:
+    k = im_h - s
+    while l + s < im_w:
+        prediction[k:k + s, l:l + s] = net_predict(data, model, s, k, l)
+        l += s
+    # right border:
+    l = im_w - s
+    prediction[k:k + s, l:l + s] = net_predict(data, model, s, k, l)
+
+    num_labels_in_prediction = int(np.max(prediction))
+    label_indecies = np.arange(num_labels_in_prediction).tolist()
+    labels_in_prediction = glob_label_list[label_indecies]
+    # create a colormap showing the networks predictions:  
+    create_colormap(prediction, title='Classification map', 
+                    labels = labels_in_prediction, legend=True)
+
+    results = { "total_pixels" : total_pixels,
+                "label_pixels" : {},
+                "label_pixels_fraction": {}
+              }
+    for i, label in enumerate(glob_label_list):
+        label_sum = (prediction == float(i)).sum()
+        results["label_pixels"][label] = label_sum
+        results["label_pixels_fraction"][label] = np.round(
+                                                label_sum/float(total_pixels),
+                                                5)
+
+    print("[INFO] Results:")
+    print('{:20s} \t {:>12s} \t {:>8s}'.format("Labels", "pixels", "fraction"))
+    print("-".rjust(48,"-"))
+    for label, value in results["label_pixels"].items():
+        print('{:20s}: \t {:12d} \t {:8f}'.format(label, value, 
+                                      results["label_pixels_fraction"][label]))
+    print('{:20s}: \t {:12d}'.format("Total pixels", results["total_pixels"]))
+ 
+    return results
 
 def main():
     res = predict_complete_image(args.patch_path, args.model)

@@ -9,6 +9,7 @@ import model_generator
 import numpy as np
 import data_io as dio
 import storeincsv as incsv
+import semseg_vaihingen.config as cfg
 from keras.utils import to_categorical
 from keras.applications.resnet50 import preprocess_input
 from collections import namedtuple
@@ -47,8 +48,6 @@ def train(data_path,
           n_epochs,
           batch_size):
 
-    num_labels = 6
-
     print('[INFO] Load data ... ')
     x_train, y_train = dio.load_data(os.path.join(data_path,'vaihingen_train.hdf5'))
     print('[INFO] Training samples: {}'.format(x_train.shape))
@@ -62,8 +61,8 @@ def train(data_path,
     print('[INFO] preprocess the labels ... ')
     y_train -= 1
     y_val -= 1
-    y_train = to_categorical(y_train, num_labels)
-    y_val = to_categorical(y_val, num_labels)
+    y_train = to_categorical(y_train, cfg.NUM_LABELS)
+    y_val = to_categorical(y_val, cfg.NUM_LABELS)
 
     print('[INFO] load model ... ')
     if n_gpus > 1:
@@ -111,7 +110,6 @@ def train_with_augmentation(data_path,
                             n_gpus,
                             n_epochs,
                             batch_size):
-    num_labels = 6
 
     print('[INFO] Load data ... ')
     x_train, y_train = dio.load_data(os.path.join(data_path,'vaihingen_train.hdf5'))
@@ -147,8 +145,8 @@ def train_with_augmentation(data_path,
     print('[INFO] preprocess the labels ... ')
     y_train -= 1
     y_val -= 1
-    y_train = to_categorical(y_train, num_labels)
-    y_val = to_categorical(y_val, num_labels)
+    y_train = to_categorical(y_train, cfg.NUM_LABELS)
+    y_val = to_categorical(y_val, cfg.NUM_LABELS)
 
     print('[INFO] load model ... ')
     if n_gpus > 1:

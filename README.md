@@ -2,7 +2,15 @@
 ==============================
 [![Build Status](https://jenkins.indigo-datacloud.eu/buildStatus/icon?job=Pipeline-as-code%2FDEEP-OC-org%2Fsemseg_vaihingen%2Fmaster)](https://jenkins.indigo-datacloud.eu/job/Pipeline-as-code/job/DEEP-OC-org/job/semseg_vaihingen/job/master/)
 
+[![Build Status](https://jenkins.indigo-datacloud.eu/buildStatus/icon?job=Pipeline-as-code%2FDEEP-OC-org%2Fsemseg_vaihingen%2Ftest)](https://jenkins.indigo-datacloud.eu/job/Pipeline-as-code/job/DEEP-OC-org/job/semseg_vaihingen/job/test/)
+
+----
+**Be careful, 'test' branch!**
+
+----
+
 2D semantic segmentation (Vaihingen dataset)
+
 
 Project Organization
 ------------

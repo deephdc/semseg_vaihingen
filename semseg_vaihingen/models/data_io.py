@@ -6,6 +6,26 @@ from os import path
 import sys
 import argparse
 
+# load jpeg or png image:
+# use standard tools of Keras (skip cv2)
+from keras import backend
+from keras.preprocessing.image import load_img
+from keras.preprocessing.image import img_to_array
+
+def load_image_jpg(file_path):
+    # set default dimension ordering as for TensorFlow
+    backend.set_image_dim_ordering('tf')
+    # load the image
+    img = load_img(file_path)
+    # convert to numpy array
+    data = img_to_array(img, dtype='int')
+
+    #print("[DEBUG] data shape: {}".format(data.shape))
+    #print("[DEBUG] data {}".format(data[:10,:10,]))
+
+    return data
+
+
 # load one of the vaihingen images, specified by image_number; by default only the first 3 channels are taken:
 def load_vaihingen_image(filename, image_number, only_three_channels=True, show_properties=False):
     # load the data and ground truth:
@@ -19,7 +39,7 @@ def load_vaihingen_image(filename, image_number, only_three_channels=True, show_
     # only use the first three channels:
     if only_three_channels:
         data = data[:, :, :3]
-
+    
     # show properties of the data and ground truth:
     if show_properties:
         print('- Ground truth:')

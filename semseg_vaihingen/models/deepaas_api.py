@@ -7,6 +7,7 @@ import json
 import yaml
 import argparse
 import pkg_resources
+import subprocess
 from keras import backend
 
 import flask
@@ -19,6 +20,51 @@ import semseg_vaihingen.models.evaluate_network as predict_resnet50
 import semseg_vaihingen.models.create_resfiles as resfiles 
 
 #from datetime import datetime
+
+def byte2str(str_in):
+    '''
+    Simple function to decode a byte string (str_in).
+    In case of a normal string, return is unchanged
+    '''
+    try:
+        str_in = str_in.decode()
+    except (UnicodeDecodeError, AttributeError):
+        pass
+    
+    return str_in 
+    
+def rclone_copy(src_path, dest_path, cmd='copy',):
+    '''
+    Wrapper around rclone to copy files
+    :param src_path: path of what to copy. in the case of "copyurl" path at the remote
+    :param dest_path: path where to copy
+    :param cmd: how to copy, "copy" or "copyurl"
+    :return: output message and a possible error
+    '''
+
+    if cmd == 'copy':
+        command = (['rclone', 'copy', '--progress', src_path, dest_path])
+    elif cmd == 'copyurl':
+        src_path = '/' + src_path.lstrip('/')
+        src_dir, src_file = os.path.split(src_path)
+        remote_link = cfg.MODEL_REMOTE_PUBLIC + src_dir + '&files=' + src_file
+        print("[INFO] Trying to download {} from {}".format(src_file,
+                                                            remote_link))
+        command = (['rclone', 'copyurl', '--progress', remote_link, dest_path])
+    else:
+        message = "[ERROR] Wrong 'cmd' value! Allowed 'copy', 'copyurl', received: " + cmd
+        raise Exception(message)
+
+    try:
+        result = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, error = result.communicate()
+    except OSError as e:
+        output, error = None, e
+        
+    output = byte2str(output)
+    error = byte2str(error)
+    
+    return output, error
 
 def get_metadata():
     """
@@ -84,7 +130,7 @@ def predict_data(*args, **kwargs):
             files = [files]
         for f in files:
             imgs.append(f)
-            catch_data_error(f.filename) 
+            #catch_data_error(f.filename) 
 
     for image in imgs:
         image_name = image.filename
@@ -100,7 +146,36 @@ def predict_data(*args, **kwargs):
         try: 
             # Clear possible pre-existing sessions. important!
             backend.clear_session()
-            prediction = predict_resnet50.predict_complete_image(f.name, model)
+            model_retrieve = yaml.safe_load(arg.model_retrieve)
+            if not os.path.exists(cfg.MODEL_PATH) or model_retrieve:
+                model_dir, model_file = os.path.split(cfg.MODEL_PATH)
+                remote_src_path = os.path.join('models', model_file)
+                print("[INFO] File {} will be retrieved from the remote.".format(cfg.MODEL_PATH))
+                output, error = rclone_copy(src_path=remote_src_path,
+                                            dest_path=cfg.MODEL_PATH,
+                                            cmd='copyurl')
+                if error:
+                    message = "[ERROR] File was not properly copied. rclone returned: "
+                    message = message + error
+                    raise Exception(message)            
+
+            # Error catch: wrong image format
+            filename, ext = os.path.splitext(f.name)
+            ext = ext.lower()
+            print("[DEBUG] filename: {}, ext: {}".format(filename, ext))
+            data_type = 'any'
+            if ext == '.hdf5' and "vaihingen_" in filename:
+                prediction = predict_resnet50.predict_complete_image(f.name, 
+                                                                     model)
+                data_type = 'vaihingen'
+            elif ( ext == '.jpeg' or ext == '.jpg' or ext == '.png' 
+                   or ext == '.tif' or ext == '.tiff' ):
+                prediction = predict_resnet50.predict_complete_image_jpg(f.name, 
+                                                                         model)
+            else:
+                raise BadRequest(""" [ERROR] Image format error: \
+                    Only '.hdf5', '.jpg', '.png', or 'tif' files are allowed. """)
+
             prediction_results["prediction"].update(prediction)
 
         except Exception as e:
@@ -109,8 +184,8 @@ def predict_data(*args, **kwargs):
             os.remove(f.name)
 
     # Build result file and stream it back
-    result_image = resfiles.merge_images()
-    result_pdf = resfiles.create_pdf(result_image,prediction_results["prediction"])
+    result_pdf = resfiles.create_pdf(prediction_results["prediction"],
+                                     data_type=data_type)
 
     return flask.send_file(filename_or_fp=result_pdf,
                            as_attachment=True,
@@ -192,6 +267,20 @@ def get_train_args():
             val['choices'] = [str(item) for item in val['choices']]
 
     return train_args
+
+
+# !!! deepaas>=0.5.0 calls get_test_args() to get args for 'predict'
+def get_test_args():
+    predict_args = cfg.predict_args
+
+    # convert default values and possible 'choices' into strings
+    for key, val in predict_args.items():
+        val['default'] = str(val['default'])  # yaml.safe_dump(val['default']) #json.dumps(val['default'])
+        if 'choices' in val:
+            val['choices'] = [str(item) for item in val['choices']]
+        #print(val['default'], type(val['default']))
+
+    return predict_args
 
 
 # during development it might be practical 
