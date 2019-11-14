@@ -31,29 +31,6 @@ class semsegPDF(FPDF):
         pageNum = "Page %s/{nb}" % self.page_no()
         self.cell(0, 10, pageNum, align="C")
 
-# Merge images and add a color legend
-def merge_images(data_type):
-    result = Image.new("RGB", (1280, 960), color=(255,255,255))
-    if data_type == 'vaihingen':
-        files = files_vaihingen
-    else:
-        files = files_any
-        
-    for index, path in enumerate(files):
-        img = Image.open(path)
-        img.thumbnail((640, 480), Image.ANTIALIAS)
-        x = index % 2 * 640
-        y = index // 2 * 480
-        w, h = img.size
-        #print('pos {0},{1} size {2},{3}'.format(x, y, w, h))
-        result.paste(img, (x, y, x + w, y + h))
-    
-    merged_file = '{}/merged_maps.png'.format(cfg.DATA_DIR)
-    result.save(merged_file)
-
-    return merged_file
-
-
 # Put images and accuracy information together in one pdf file
 def create_pdf(prediction, data_type):
     pdf = semsegPDF()
@@ -68,24 +45,40 @@ def create_pdf(prediction, data_type):
     else:
         files = files_any
     
-    x_next = 10.
-    y_next = 50.
+    # take groundthrough or classification image, 
+    # as it has the "legend", i.e. it is wider
+    image = Image.open(files[1])
+    width_px, height_px = image.size
+    ratio_w_h = width_px/float(height_px)        
+    height = 100. # 100mm
+    width = height * ratio_w_h
     
-    for image_path in files:
+    if data_type == 'vaihingen' and width > 90.:
+        height = 90. / ratio_w_h
+
+    if data_type != 'vaihingen' and width > 180.:
+        height = 180. / ratio_w_h
+
+    # width of the 'widest' image
+    width = height * ratio_w_h
+
+    x_00 = 10.
+    y_00 = 50.
+
+    x_0 = x_00
+    y_0 = y_00
+        
+    for index, image_path in enumerate(files):
         image = Image.open(image_path)
-        #image.thumbnail((640, 480), Image.ANTIALIAS)
-        width, height = image.size
-        print("[DEBUG] image_size: ", image.size)
-        # convert pixel in mm with 1px=0.264583 mm
-        width, height = float(width * 0.264583), float(height * 0.264583)
-        if (x_next + width) < 200.:
-            y_next = 50.
-        else:
-            x_next = 10.
+        pdf.image(image_path, x_0, y_0, h=height)
+        if len(files) == 2:
+            x_0 = x_00
+            y_0 = y_00 + height
+
+        if len(files) == 4:
+            x_0 = x_00 + width * ((index + 1) % 2)
+            y_0 = y_00 + height * ((index + 1) // 2)
             
-        pdf.image(image_path, x_next, y_next, h=70)
-        x_next += width + 10.
-        y_next += height + 10.
 
     pdf.add_page()
 

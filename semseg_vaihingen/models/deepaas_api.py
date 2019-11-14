@@ -184,7 +184,6 @@ def predict_data(*args, **kwargs):
             os.remove(f.name)
 
     # Build result file and stream it back
-    result_image = resfiles.merge_images(data_type)
     result_pdf = resfiles.create_pdf(prediction_results["prediction"],
                                      data_type=data_type)
 

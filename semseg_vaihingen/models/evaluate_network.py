@@ -66,7 +66,8 @@ def create_colormap(label_matrix, title, labels=glob_label_list,
     #plt.show()
     
     plot_file = title.replace(' ', '_') + '.png'
-    plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file), bbox_inches='tight')
+    plt.savefig(os.path.join(cfg.BASE_DIR, 'data', plot_file), 
+                dpi=225, bbox_inches='tight')
     plt.clf()
 
 # function to generate a plot of the wrong classified pixels
