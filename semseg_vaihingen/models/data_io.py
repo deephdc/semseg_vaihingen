@@ -5,6 +5,7 @@ from os import path
 
 import sys
 import argparse
+import semseg_vaihingen.config as cfg
 
 # load jpeg or png image:
 # use standard tools of Keras (skip cv2)
@@ -77,10 +78,11 @@ def image_to_dataset(filename, image_number, window_shape, overlap_factor):
     return input_list, output_list
 
 
-# generate dataset consisting of 256x256 sized image patches; spatial overlap of the patches can be specified
+# generate dataset consisting of 256x256 sized image patches (defined in config.py)
+# spatial overlap of the patches can be specified
 def generate_dataset(data_path, image_numbers, overlap_factor):
     # input / output size of the FCN:
-    size = 256
+    size = cfg.PATCH_SIZE
 
     # specify filename and directory:
     file_directory = data_path

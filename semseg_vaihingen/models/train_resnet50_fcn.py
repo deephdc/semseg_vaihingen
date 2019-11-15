@@ -118,8 +118,7 @@ def train(data_path,
                                    
     reduceLROnPlat = ReduceLROnPlateau(monitor='val_loss', 
                                        factor=0.8, patience=3, 
-                                       verbose=1, mode='auto', 
-                                       epsilon=0.0001, 
+                                       verbose=1, mode='auto',
                                        cooldown=5, 
                                        min_lr=0.0001)
                                        

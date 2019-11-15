@@ -150,7 +150,7 @@ def predict_complete_image(patch_path, network_weight_file):
     # define image size and network input/output size:
     im_h = data.shape[0]
     im_w = data.shape[1]
-    s = 256
+    s = cfg.PATCH_SIZE
 
     print('[INFO] Apply network to image ... ')
     # iterate over the complete image:
@@ -239,7 +239,7 @@ def predict_complete_image_jpg(patch_path, network_weight_file):
     # define image size and network input/output size:
     im_h = data.shape[0]
     im_w = data.shape[1]
-    s = 256
+    s = cfg.PATCH_SIZE
 
     print('[INFO] Apply network to image ... ')
     # iterate over the complete image:

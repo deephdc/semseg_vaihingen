@@ -278,6 +278,7 @@ def train(train_args):
         # full path to the zip file
         model_zip_path = os.path.join(model_dir, model_file + '.zip')
         # cd to the directory with the trained model
+        print("[INFO] Zipping the trained weights..")
         os.chdir(model_dir)
         graph_zip = zipfile.ZipFile(model_zip_path, 'w')
         graph_zip.write(model_file)
@@ -286,8 +287,10 @@ def train(train_args):
         output, error = rclone_copy(model_zip_path, cfg.REMOTE_MODELS_UPLOAD)
         if error:
             print("[ERROR] rclone returned: {}".format(error))
+        else:
+            os.remove(model_zip_path)
     else:
-        print("[ERROR] Created weights file, %s, was NOT uploaded!" % cfg.MODEL_PATH)
+        print("[INFO] Created weights file, %s, was NOT uploaded!" % cfg.MODEL_PATH)
 
     return run_results
 
