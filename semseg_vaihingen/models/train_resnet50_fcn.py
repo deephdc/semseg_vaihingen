@@ -11,7 +11,7 @@ import data_io as dio
 import storeincsv as incsv
 import semseg_vaihingen.config as cfg
 from keras.utils import to_categorical
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from keras.applications.resnet50 import preprocess_input
 from collections import namedtuple
 from datetime import datetime
@@ -115,12 +115,22 @@ def train(data_path,
 
     checkpointer = ModelCheckpoint(filepath=output_model, 
                                    verbose=1, save_best_only=True)
+                                   
+    reduceLROnPlat = ReduceLROnPlateau(monitor='val_loss', 
+                                       factor=0.8, patience=3, 
+                                       verbose=1, mode='auto', 
+                                       epsilon=0.0001, 
+                                       cooldown=5, 
+                                       min_lr=0.0001)
+                                       
     resnet50_fcn_model.fit(x_train, y_train, 
                            batch_size=batch_size, 
                            epochs=n_epochs, 
                            validation_data=(x_val, y_val),
                            #steps_per_epoch=len(x_train)//batch_size,
-                           callbacks=[checkpointer, time_callback],
+                           callbacks=[checkpointer, 
+                                      reduceLROnPlat, 
+                                      time_callback],
                            verbose=1)
 
     print(time_callback.total_duration)

@@ -276,10 +276,10 @@ def train(train_args):
         # adapted from https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory-in-python
         model_dir, model_file = os.path.split(cfg.MODEL_PATH)
         # full path to the zip file
-        model_zip_path = os.path.join(cfg.MODEL_PATH, model_file + '.zip')
+        model_zip_path = os.path.join(model_dir, model_file + '.zip')
         # cd to the directory with the trained model
         os.chdir(model_dir)
-        graph_zip = zipfile.ZipFile(model_zip_path, 'w', zipfile.ZIP_DEFLATED)
+        graph_zip = zipfile.ZipFile(model_zip_path, 'w')
         graph_zip.write(model_file)
         graph_zip.close()        
         
