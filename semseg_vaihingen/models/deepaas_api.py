@@ -6,6 +6,7 @@ import os
 import json
 import yaml
 import argparse
+import zipfile
 import pkg_resources
 import subprocess
 from keras import backend
@@ -50,7 +51,7 @@ def rclone_copy(src_path, dest_path, cmd='copy',):
         remote_link = cfg.MODEL_REMOTE_PUBLIC + src_dir + '&files=' + src_file
         print("[INFO] Trying to download {} from {}".format(src_file,
                                                             remote_link))
-        command = (['rclone', 'copyurl', '--progress', remote_link, dest_path])
+        command = (['rclone', 'copyurl', remote_link, dest_path])
     else:
         message = "[ERROR] Wrong 'cmd' value! Allowed 'copy', 'copyurl', received: " + cmd
         raise Exception(message)
@@ -149,15 +150,28 @@ def predict_data(*args, **kwargs):
             model_retrieve = yaml.safe_load(arg.model_retrieve)
             if not os.path.exists(cfg.MODEL_PATH) or model_retrieve:
                 model_dir, model_file = os.path.split(cfg.MODEL_PATH)
-                remote_src_path = os.path.join('models', model_file)
-                print("[INFO] File {} will be retrieved from the remote.".format(cfg.MODEL_PATH))
+                model_file_zip = model_file + '.zip'
+                remote_src_path = os.path.join('models', model_file_zip)
+                store_zip_path = os.path.join(model_dir, model_file_zip)
+                print("[INFO] File {} will be retrieved from the remote.".format(store_zip_path))
                 output, error = rclone_copy(src_path=remote_src_path,
-                                            dest_path=cfg.MODEL_PATH,
+                                            dest_path=store_zip_path,
                                             cmd='copyurl')
                 if error:
                     message = "[ERROR] File was not properly copied. rclone returned: "
                     message = message + error
-                    raise Exception(message)            
+                    raise Exception(message)
+                
+                # if .zip is present locally, de-archive it
+                if os.path.exists(store_zip_path):
+                    print("[INFO] {} was downloaded. Unzipping...".format(store_zip_path))
+                    data_zip = zipfile.ZipFile(store_zip_path, 'r')
+                    data_zip.extractall(model_dir)
+                    data_zip.close()
+                    # remove downloaded zip-file
+                    if os.path.exists(model_dir):
+                        os.remove(store_zip_path)
+
 
             # Error catch: wrong image format
             filename, ext = os.path.splitext(f.name)
@@ -258,9 +272,18 @@ def train(train_args):
     # REMOTE_MODELS_UPLOAD is defined in config.py #vk
     upload_back = yaml.safe_load(train_args.upload_back)
     if(upload_back and os.path.exists(cfg.MODEL_PATH)):
-        _, weights_file = os.path.split(cfg.MODEL_PATH)
-        output, error = rclone_copy(cfg.MODEL_PATH,
-                                    os.path.join(cfg.REMOTE_MODELS_UPLOAD, weights_file))
+        # zip the trained model, aka savedmodel:
+        # adapted from https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory-in-python
+        model_dir, model_file = os.path.split(cfg.MODEL_PATH)
+        # full path to the zip file
+        model_zip_path = os.path.join(cfg.MODEL_PATH, model_file + '.zip')
+        # cd to the directory with the trained model
+        os.chdir(model_dir)
+        graph_zip = zipfile.ZipFile(model_zip_path, 'w', zipfile.ZIP_DEFLATED)
+        graph_zip.write(model_file)
+        graph_zip.close()        
+        
+        output, error = rclone_copy(model_zip_path, cfg.REMOTE_MODELS_UPLOAD)
         if error:
             print("[ERROR] rclone returned: {}".format(error))
     else:

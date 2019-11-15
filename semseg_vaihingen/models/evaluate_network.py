@@ -204,8 +204,11 @@ def predict_complete_image(patch_path, network_weight_file):
 
     # store the % of correct predicted pixels per label in a dict
     results["label_accuracy"] = {}
-    for i, label in enumerate(glob_label_list):
-        results["label_accuracy"][label] = "{}%".format(100.*label_accuracy[i])
+    i_label = 0
+    for label in glob_label_list:
+        results["label_accuracy"][label] = "{}%".format(100.*
+                                                       label_accuracy[i_label])
+        i_label += 1
 
     num_labels_in_prediction = int(np.max(prediction))
     label_indecies = np.arange(num_labels_in_prediction).tolist()
@@ -271,12 +274,17 @@ def predict_complete_image_jpg(patch_path, network_weight_file):
                 "label_pixels" : {},
                 "label_pixels_fraction": {}
               }
-    for i, label in enumerate(glob_label_list):
-        label_sum = (prediction == float(i)).sum()
+
+    print("[DEBUG] unqiue values in prediction: {}".format(np.unique(prediction)))
+    
+    i_label = 0
+    for label in glob_label_list:
+        label_sum = (prediction == float(i_label + 1.)).sum()
         results["label_pixels"][label] = label_sum
         results["label_pixels_fraction"][label] = np.round(
                                                 label_sum/float(total_pixels),
                                                 5)
+        i_label += 1
 
     print("[INFO] Results:")
     print('{:20s} \t {:>12s} \t {:>8s}'.format("Labels", "pixels", "fraction"))

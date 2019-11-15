@@ -63,8 +63,9 @@ def train(data_path,
         #x_train_aug, y_train_aug = augmentation.every_element_five_augmentations(x_train, y_train)
         #x_val_aug, y_val_aug = augmentation.every_element_five_augmentations(x_val, y_val)
 
-        print(x_train.dtype)
-        print(x_train_aug.dtype)
+        # for debugging, print type of data        
+        #print(x_train.dtype)
+        #print(x_train_aug.dtype)
 
         # put each array together with its augmented version:
         print('.[INFO] Concatenate data with original and augmented images')
