@@ -242,23 +242,13 @@ def train(train_args):
             message = "[ERROR] training data not copied. rclone returned: " + error
             raise Exception(message)
 
-    if (yaml.safe_load(train_args.augmentation)):
-        params = train_resnet50.train_with_augmentation(
-                                      cfg.DATA_DIR,
-                                      cfg.MODEL_PATH,
-                                      yaml.safe_load(train_args.augmentation),
-                                      yaml.safe_load(train_args.transfer_learning),
-                                      yaml.safe_load(train_args.n_gpus),
-                                      yaml.safe_load(train_args.n_epochs),
-                                      yaml.safe_load(train_args.batch_size))
-    else:
-        params = train_resnet50.train(cfg.DATA_DIR,
-                                      cfg.MODEL_PATH,
-                                      yaml.safe_load(train_args.augmentation),
-                                      yaml.safe_load(train_args.transfer_learning),
-                                      yaml.safe_load(train_args.n_gpus),
-                                      yaml.safe_load(train_args.n_epochs),
-                                      yaml.safe_load(train_args.batch_size))
+    params = train_resnet50.train(cfg.DATA_DIR,
+                                  cfg.MODEL_PATH,
+                                  yaml.safe_load(train_args.augmentation),
+                                  yaml.safe_load(train_args.transfer_learning),
+                                  yaml.safe_load(train_args.n_gpus),
+                                  yaml.safe_load(train_args.n_epochs),
+                                  yaml.safe_load(train_args.batch_size))
     
     run_results["training"] = yaml.safe_load(json.dumps(params._asdict(), 
                                                         default=str))

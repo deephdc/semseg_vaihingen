@@ -18,9 +18,9 @@ TRAINING_DATA = 'vaihingen_train.hdf5'
 VALIDATION_DATA = 'vaihingen_val.hdf5'
 
 train_args = { 'augmentation': {'default': False,
-                                 'choices': [False, True],
-                                 'help': 'Apply augmentation',
-                                 'required': False
+                                'choices': [False, True],
+                                'help': 'Apply augmentation',
+                                'required': False
                                 },
                'transfer_learning': {'default': False,
                                       'choices': [False, True],
