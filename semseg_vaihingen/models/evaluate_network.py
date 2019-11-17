@@ -223,7 +223,7 @@ def predict_complete_image(patch_path, network_weight_file):
 # function to apply a trained network to a whole image:
 def predict_complete_image_jpg(patch_path, network_weight_file):
 
-    data = dio.load_image_jpg(patch_path)
+    data = dio.load_image_jpg(patch_path, convert_gray=False)
     print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
     total_pixels = data.shape[0]*data.shape[1]
 
