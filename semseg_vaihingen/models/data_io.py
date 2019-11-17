@@ -24,13 +24,27 @@ def rgb2gray(rgb):
     return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
 
 
-def load_image_jpg(file_path):
+def image_to_gray(data_in):
+    img_bw = Image.fromarray(data_in, 'RGB').convert('L')
+    data_bw = img_to_array(img_bw, dtype='int')
+    data = np.concatenate((data_bw, data_bw, data_bw), axis=2)
+    print("[INFO] data_in.shape: {}, data_bw.shape: {}, data.shape: {}".format(
+           data_in.shape, data_bw.shape, data.shape))
+    return data
+
+def load_image_jpg(file_path, convert_gray=True):
     # set default dimension ordering as for TensorFlow
     backend.set_image_dim_ordering('tf')
     # load the image
     img = load_img(file_path)
     # convert to numpy array
-    data = img_to_array(img, dtype='int')
+    data_raw = img_to_array(img, dtype='int')
+    
+    if convert_gray:
+        print("[INFO] Use conversation to grayscale!")
+        data = image_to_gray(data_raw)
+    else:
+        data = data_raw
 
     print("[DEBUG] data shape: {}".format(data.shape))
     print("[DEBUG] data {}".format(data[:10,:10,]))
@@ -62,11 +76,8 @@ def load_vaihingen_image(filename, image_number,
     
     if convert_gray:
         print("[INFO] Use conversation to grayscale!")
-        img_bw = Image.fromarray(data_raw, 'RGB').convert('L')
-        data_bw = img_to_array(img_bw, dtype='int')
-        data = np.concatenate((data_bw, data_bw, data_bw), axis=2)
+        data = image_to_gray(data_raw)
         if debug:
-            print("[DEBUG] data_bw.shape: {}".format(data_bw.shape))
             print("[DEBUG] data {}".format(data[:10,:10,]))
     else:
         data = data_raw
