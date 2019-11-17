@@ -15,8 +15,8 @@ REMOTE_STORAGE = 'rshare:/deep-oc-apps/semseg_vaihingen'
 REMOTE_MODELS_UPLOAD = path.join(REMOTE_STORAGE, 'models')
 NUM_LABELS = 6  # max number of labels
 PATCH_SIZE = 256
-TRAINING_DATA = 'vaihingen_train.hdf5'
-VALIDATION_DATA = 'vaihingen_val.hdf5'
+TRAINING_DATA = 'vaihingen_train_bw.hdf5'
+VALIDATION_DATA = 'vaihingen_val_bw.hdf5'
 
 train_args = { 'augmentation': {'default': False,
                                 'choices': [False, True],

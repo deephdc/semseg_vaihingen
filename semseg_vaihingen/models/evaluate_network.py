@@ -60,8 +60,9 @@ def create_colormap(label_matrix, title, labels=glob_label_list,
         # generate and show the map
         ax1.imshow(label_matrix, cmap=label_cmap)
     else:
+        print("[DEBUG] label_matrix.shape={}".format(label_matrix.shape))
         ax1.imshow(label_matrix)
-               
+
     plt.title(title)
     #plt.show()
     
