@@ -25,29 +25,47 @@ def rgb2gray(rgb):
 
 
 def image_to_gray(data_in):
+    '''
+    Function to convert image data into grayscale.
+    :param data_in: input array, must be (u)int8 type (0..255)!
+    '''
+    debug = False
     img_bw = Image.fromarray(data_in, 'RGB').convert('L')
     data_bw = img_to_array(img_bw, dtype='int')
     data = np.concatenate((data_bw, data_bw, data_bw), axis=2)
     print("[INFO] data_in.shape: {}, data_bw.shape: {}, data.shape: {}".format(
            data_in.shape, data_bw.shape, data.shape))
+    print("[INFO] data_in.type: {}, data_bw.type: {}, data.type: {}".format(
+           data_in.dtype, data_bw.dtype, data.dtype))
+
+    if debug:
+        print("[DEBUG] data_in {}".format(data_in[:5,:5,]))
+        print("[DEBUG] data_bw {}".format(data_bw[:5,:5,]))
+        print("[DEBUG] data {}".format(data[:5,:5,]))
+
     return data
 
-def load_image_jpg(file_path, convert_gray=True):
+def load_image_jpg(file_path, convert_gray=False):
+    debug = False
     # set default dimension ordering as for TensorFlow
     backend.set_image_dim_ordering('tf')
     # load the image
     img = load_img(file_path)
     # convert to numpy array
-    data_raw = img_to_array(img, dtype='int')
+    data_raw = img_to_array(img, dtype='uint8')
+    
+    if debug:
+        print("[DEBUG] data_raw {}".format(data_raw[:5,:5,]))
     
     if convert_gray:
         print("[INFO] Use conversation to grayscale!")
         data = image_to_gray(data_raw)
+        if debug:
+            print("[DEBUG] data {}".format(data[:5,:5,]))
     else:
         data = data_raw
 
-    print("[DEBUG] data shape: {}".format(data.shape))
-    print("[DEBUG] data {}".format(data[:10,:10,]))
+
 
     return data
 
@@ -56,7 +74,7 @@ def load_image_jpg(file_path, convert_gray=True):
 # by default only the first 3 channels are taken:
 def load_vaihingen_image(filename, image_number, 
                          only_three_channels=True, show_properties=False,
-                         convert_gray=True):
+                         convert_gray=False):
     debug = False
     # load the data and ground truth:
     f = h5py.File(filename)
@@ -72,13 +90,13 @@ def load_vaihingen_image(filename, image_number,
     
     if debug:
         print("[DEBUG] data shape: {}".format(data_raw.shape))
-        print("[DEBUG] data {}".format(data_raw[:10,:10,]))
+        print("[DEBUG] data {}".format(data_raw[:5,:5,]))
     
     if convert_gray:
         print("[INFO] Use conversation to grayscale!")
         data = image_to_gray(data_raw)
         if debug:
-            print("[DEBUG] data {}".format(data[:10,:10,]))
+            print("[DEBUG] data {}".format(data[:5,:5,]))
     else:
         data = data_raw
 

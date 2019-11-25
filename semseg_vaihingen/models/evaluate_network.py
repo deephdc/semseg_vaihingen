@@ -119,10 +119,12 @@ def print_labelwise_accuracy(confusion, label_accuracy):
 
 
 # function to apply a trained network to a whole image:
-def predict_complete_image(patch_path, network_weight_file):
+def predict_complete_image(patch_path, network_weight_file, 
+                           convert_gray=False):
     image_number = re.search('_(.*).hdf5', patch_path).group(1)
     print('[INFO] Load image number {} ... '.format(image_number))
-    data, ground_truth = dio.load_vaihingen_image(patch_path, image_number)
+    data, ground_truth = dio.load_vaihingen_image(patch_path, image_number,
+                                                  convert_gray=convert_gray)
     print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
 
     # plot the input:
@@ -221,9 +223,10 @@ def predict_complete_image(patch_path, network_weight_file):
     return results
 
 # function to apply a trained network to a whole image:
-def predict_complete_image_jpg(patch_path, network_weight_file):
+def predict_complete_image_jpg(patch_path, network_weight_file,
+                               convert_gray=False):
 
-    data = dio.load_image_jpg(patch_path, convert_gray=False)
+    data = dio.load_image_jpg(patch_path, convert_gray=convert_gray)
     print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
     total_pixels = data.shape[0]*data.shape[1]
 

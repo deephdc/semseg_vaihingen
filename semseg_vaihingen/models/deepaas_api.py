@@ -116,7 +116,8 @@ def predict_data(*args, **kwargs):
     """
     Function to make prediction on an uploaded image file
     """
-    model = cfg.MODEL_PATH 
+
+
     prediction_results = { "status" : "ok",
                            "prediction": {} 
                          }
@@ -131,8 +132,19 @@ def predict_data(*args, **kwargs):
             files = [files]
         for f in files:
             imgs.append(f)
-            #catch_data_error(f.filename) 
+            #catch_data_error(f.filename)
 
+        if arg['model_weights_load'] is not None:
+            model_path = os.path.join(
+                                    cfg.MODEL_DIR, 
+                                    yaml.safe_load(arg['model_weights_load']))
+        else:
+            model_path = os.path.join(cfg.MODEL_DIR, cfg.MODEL_WEIGHTS_FILE)
+
+    convert_gray = False
+    if 'convert_grayscale' in kwargs:
+        convert_gray = yaml.safe_load(args['convert_grayscale'])
+ 
     for image in imgs:
         image_name = image.filename
         f = open("/tmp/%s" % image_name, "w+")
@@ -148,8 +160,8 @@ def predict_data(*args, **kwargs):
             # Clear possible pre-existing sessions. important!
             backend.clear_session()
             model_retrieve = yaml.safe_load(arg.model_retrieve)
-            if not os.path.exists(cfg.MODEL_PATH) or model_retrieve:
-                model_dir, model_file = os.path.split(cfg.MODEL_PATH)
+            if not os.path.exists(model_path) or model_retrieve:
+                model_dir, model_file = os.path.split(model_path)
                 model_file_zip = model_file + '.zip'
                 remote_src_path = os.path.join('models', model_file_zip)
                 store_zip_path = os.path.join(model_dir, model_file_zip)
@@ -180,12 +192,14 @@ def predict_data(*args, **kwargs):
             data_type = 'any'
             if ext == '.hdf5' and "vaihingen_" in filename:
                 prediction = predict_resnet50.predict_complete_image(f.name, 
-                                                                     model)
+                                                                     model_path,
+                                                                     convert_gray)
                 data_type = 'vaihingen'
             elif ( ext == '.jpeg' or ext == '.jpg' or ext == '.png' 
                    or ext == '.tif' or ext == '.tiff' ):
                 prediction = predict_resnet50.predict_complete_image_jpg(f.name, 
-                                                                         model)
+                                                                         model_path,
+                                                                         convert_gray)
             else:
                 raise BadRequest(""" [ERROR] Image format error: \
                     Only '.hdf5', '.jpg', '.png', or 'tif' files are allowed. """)
@@ -242,7 +256,13 @@ def train(train_args):
 
     # Clear possible pre-existing sessions. important!
     backend.clear_session()
-    
+
+    if train_args['model_weights_save'] is not None:
+        model_path = os.path.join(cfg.MODEL_DIR, 
+                             yaml.safe_load(train_args['model_weights_save']))
+    else:
+        model_path = os.path.join(cfg.MODEL_DIR, cfg.MODEL_WEIGHTS_FILE)
+
     # check if vaihingen_train.hdf5 and vaihingen_val.hdf5 exist locally,
     # if not -> download them from the REMOTE_STORAGE
     training_data = os.path.join(cfg.DATA_DIR, cfg.TRAINING_DATA)
@@ -257,7 +277,7 @@ def train(train_args):
             raise Exception(message)
 
     params = train_resnet50.train(cfg.DATA_DIR,
-                                  cfg.MODEL_PATH,
+                                  model_path,
                                   yaml.safe_load(train_args.augmentation),
                                   yaml.safe_load(train_args.transfer_learning),
                                   yaml.safe_load(train_args.n_gpus),
@@ -271,10 +291,10 @@ def train(train_args):
 
     # REMOTE_MODELS_UPLOAD is defined in config.py #vk
     upload_back = yaml.safe_load(train_args.upload_back)
-    if(upload_back and os.path.exists(cfg.MODEL_PATH)):
+    if(upload_back and os.path.exists(model_path)):
         # zip the trained model, aka savedmodel:
         # adapted from https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory-in-python
-        model_dir, model_file = os.path.split(cfg.MODEL_PATH)
+        model_dir, model_file = os.path.split(model_path)
         # full path to the zip file
         model_zip_path = os.path.join(model_dir, model_file + '.zip')
         # cd to the directory with the trained model
@@ -290,7 +310,7 @@ def train(train_args):
         else:
             os.remove(model_zip_path)
     else:
-        print("[INFO] Created weights file, %s, was NOT uploaded!" % cfg.MODEL_PATH)
+        print("[INFO] Created weights file, %s, was NOT uploaded!" % model_path)
 
     return run_results
 
