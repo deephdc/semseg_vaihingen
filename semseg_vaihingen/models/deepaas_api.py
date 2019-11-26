@@ -82,8 +82,7 @@ def get_metadata():
         'Home-page': None,
         'Author': None,
         'Author-email': None,
-        'License': None,
-        'Train-Args': cfg.train_args
+        'License': None
     }
 
     for line in pkg.get_metadata_lines("PKG-INFO"):
