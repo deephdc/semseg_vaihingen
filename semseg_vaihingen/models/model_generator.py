@@ -3,20 +3,21 @@ from resnet50_edit import ResNet50
 from keras.models import Model
 from keras.layers import Input, Convolution2D, Lambda, Add, Reshape, Activation
 import tensorflow as tf
+import semseg_vaihingen.config as cfg
 
 
 # there is no layer for bilinear resizing in Keras, so we define this function and use it as a Lambda function
 def resize_bilinear(images):
-    rows = 256
-    cols = 256
+    rows = cfg.PATCH_SIZE
+    cols = cfg.PATCH_SIZE
     return tf.image.resize_bilinear(images, [rows, cols])
 
 
 # the function to generate a FCN version of the ResNet50 model:
 def generate_resnet50_fcn(use_pretraining):
-    num_labels = 6
-    input_dim_row = 256
-    input_dim_col = 256
+    num_labels = cfg.NUM_LABELS
+    input_dim_row = cfg.PATCH_SIZE
+    input_dim_col = cfg.PATCH_SIZE
     input_shape = (input_dim_row, input_dim_col, 3)
     input_tensor = Input(shape=input_shape)
     weights = 'imagenet' if use_pretraining else None

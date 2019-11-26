@@ -6,6 +6,7 @@ import os
 import json
 import yaml
 import argparse
+import zipfile
 import pkg_resources
 import subprocess
 from keras import backend
@@ -50,7 +51,7 @@ def rclone_copy(src_path, dest_path, cmd='copy',):
         remote_link = cfg.MODEL_REMOTE_PUBLIC + src_dir + '&files=' + src_file
         print("[INFO] Trying to download {} from {}".format(src_file,
                                                             remote_link))
-        command = (['rclone', 'copyurl', '--progress', remote_link, dest_path])
+        command = (['rclone', 'copyurl', remote_link, dest_path])
     else:
         message = "[ERROR] Wrong 'cmd' value! Allowed 'copy', 'copyurl', received: " + cmd
         raise Exception(message)
@@ -115,7 +116,8 @@ def predict_data(*args, **kwargs):
     """
     Function to make prediction on an uploaded image file
     """
-    model = cfg.MODEL_PATH 
+
+
     prediction_results = { "status" : "ok",
                            "prediction": {} 
                          }
@@ -130,8 +132,19 @@ def predict_data(*args, **kwargs):
             files = [files]
         for f in files:
             imgs.append(f)
-            #catch_data_error(f.filename) 
+            #catch_data_error(f.filename)
 
+        if arg['model_weights_load'] is not None:
+            model_path = os.path.join(
+                                    cfg.MODEL_DIR, 
+                                    yaml.safe_load(arg['model_weights_load']))
+        else:
+            model_path = os.path.join(cfg.MODEL_DIR, cfg.MODEL_WEIGHTS_FILE)
+
+    convert_gray = False
+    if 'convert_grayscale' in kwargs:
+        convert_gray = yaml.safe_load(args['convert_grayscale'])
+ 
     for image in imgs:
         image_name = image.filename
         f = open("/tmp/%s" % image_name, "w+")
@@ -147,17 +160,30 @@ def predict_data(*args, **kwargs):
             # Clear possible pre-existing sessions. important!
             backend.clear_session()
             model_retrieve = yaml.safe_load(arg.model_retrieve)
-            if not os.path.exists(cfg.MODEL_PATH) or model_retrieve:
-                model_dir, model_file = os.path.split(cfg.MODEL_PATH)
-                remote_src_path = os.path.join('models', model_file)
-                print("[INFO] File {} will be retrieved from the remote.".format(cfg.MODEL_PATH))
+            if not os.path.exists(model_path) or model_retrieve:
+                model_dir, model_file = os.path.split(model_path)
+                model_file_zip = model_file + '.zip'
+                remote_src_path = os.path.join('models', model_file_zip)
+                store_zip_path = os.path.join(model_dir, model_file_zip)
+                print("[INFO] File {} will be retrieved from the remote.".format(store_zip_path))
                 output, error = rclone_copy(src_path=remote_src_path,
-                                            dest_path=cfg.MODEL_PATH,
+                                            dest_path=store_zip_path,
                                             cmd='copyurl')
                 if error:
                     message = "[ERROR] File was not properly copied. rclone returned: "
                     message = message + error
-                    raise Exception(message)            
+                    raise Exception(message)
+                
+                # if .zip is present locally, de-archive it
+                if os.path.exists(store_zip_path):
+                    print("[INFO] {} was downloaded. Unzipping...".format(store_zip_path))
+                    data_zip = zipfile.ZipFile(store_zip_path, 'r')
+                    data_zip.extractall(model_dir)
+                    data_zip.close()
+                    # remove downloaded zip-file
+                    if os.path.exists(model_dir):
+                        os.remove(store_zip_path)
+
 
             # Error catch: wrong image format
             filename, ext = os.path.splitext(f.name)
@@ -166,12 +192,14 @@ def predict_data(*args, **kwargs):
             data_type = 'any'
             if ext == '.hdf5' and "vaihingen_" in filename:
                 prediction = predict_resnet50.predict_complete_image(f.name, 
-                                                                     model)
+                                                                     model_path,
+                                                                     convert_gray)
                 data_type = 'vaihingen'
             elif ( ext == '.jpeg' or ext == '.jpg' or ext == '.png' 
                    or ext == '.tif' or ext == '.tiff' ):
                 prediction = predict_resnet50.predict_complete_image_jpg(f.name, 
-                                                                         model)
+                                                                         model_path,
+                                                                         convert_gray)
             else:
                 raise BadRequest(""" [ERROR] Image format error: \
                     Only '.hdf5', '.jpg', '.png', or 'tif' files are allowed. """)
@@ -229,28 +257,61 @@ def train(train_args):
     # Clear possible pre-existing sessions. important!
     backend.clear_session()
 
-    if (yaml.safe_load(train_args.augmentation)):
-        params = train_resnet50.train_with_augmentation(
-                                      cfg.DATA_DIR,
-                                      cfg.MODEL_PATH,
-                                      yaml.safe_load(train_args.augmentation),
-                                      yaml.safe_load(train_args.transfer_learning),
-                                      yaml.safe_load(train_args.n_gpus),
-                                      yaml.safe_load(train_args.n_epochs),
-                                      yaml.safe_load(train_args.batch_size))
+    if train_args['model_weights_save'] is not None:
+        model_path = os.path.join(cfg.MODEL_DIR, 
+                             yaml.safe_load(train_args['model_weights_save']))
     else:
-        params = train_resnet50.train(cfg.DATA_DIR,
-                                      cfg.MODEL_PATH,
-                                      yaml.safe_load(train_args.augmentation),
-                                      yaml.safe_load(train_args.transfer_learning),
-                                      yaml.safe_load(train_args.n_gpus),
-                                      yaml.safe_load(train_args.n_epochs),
-                                      yaml.safe_load(train_args.batch_size))
+        model_path = os.path.join(cfg.MODEL_DIR, cfg.MODEL_WEIGHTS_FILE)
+
+    # check if vaihingen_train.hdf5 and vaihingen_val.hdf5 exist locally,
+    # if not -> download them from the REMOTE_STORAGE
+    training_data = os.path.join(cfg.DATA_DIR, cfg.TRAINING_DATA)
+    validation_data = os.path.join(cfg.DATA_DIR, cfg.VALIDATION_DATA)
+    remote_data_storage = os.path.join(cfg.REMOTE_STORAGE, 'data')
+    if not (os.path.exists(training_data) or os.path.exists(validation_data)):
+        print("[INFO] Either %s or %s NOT found locally, download them from %s" % 
+              (training_data, validation_data, remote_data_storage))
+        output, error = rclone_copy(remote_data_storage, cfg.DATA_DIR)
+        if error:
+            message = "[ERROR] training data not copied. rclone returned: " + error
+            raise Exception(message)
+
+    params = train_resnet50.train(cfg.DATA_DIR,
+                                  model_path,
+                                  yaml.safe_load(train_args.augmentation),
+                                  yaml.safe_load(train_args.transfer_learning),
+                                  yaml.safe_load(train_args.n_gpus),
+                                  yaml.safe_load(train_args.n_epochs),
+                                  yaml.safe_load(train_args.batch_size))
     
     run_results["training"] = yaml.safe_load(json.dumps(params._asdict(), 
                                                         default=str))
 
     print("Run results: " + str(run_results))
+
+    # REMOTE_MODELS_UPLOAD is defined in config.py #vk
+    upload_back = yaml.safe_load(train_args.upload_back)
+    if(upload_back and os.path.exists(model_path)):
+        # zip the trained model, aka savedmodel:
+        # adapted from https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory-in-python
+        model_dir, model_file = os.path.split(model_path)
+        # full path to the zip file
+        model_zip_path = os.path.join(model_dir, model_file + '.zip')
+        # cd to the directory with the trained model
+        print("[INFO] Zipping the trained weights..")
+        os.chdir(model_dir)
+        graph_zip = zipfile.ZipFile(model_zip_path, 'w')
+        graph_zip.write(model_file)
+        graph_zip.close()        
+        
+        output, error = rclone_copy(model_zip_path, cfg.REMOTE_MODELS_UPLOAD)
+        if error:
+            print("[ERROR] rclone returned: {}".format(error))
+        else:
+            os.remove(model_zip_path)
+    else:
+        print("[INFO] Created weights file, %s, was NOT uploaded!" % model_path)
+
     return run_results
 
 

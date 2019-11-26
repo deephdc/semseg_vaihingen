@@ -60,8 +60,9 @@ def create_colormap(label_matrix, title, labels=glob_label_list,
         # generate and show the map
         ax1.imshow(label_matrix, cmap=label_cmap)
     else:
+        print("[DEBUG] label_matrix.shape={}".format(label_matrix.shape))
         ax1.imshow(label_matrix)
-               
+
     plt.title(title)
     #plt.show()
     
@@ -118,10 +119,12 @@ def print_labelwise_accuracy(confusion, label_accuracy):
 
 
 # function to apply a trained network to a whole image:
-def predict_complete_image(patch_path, network_weight_file):
+def predict_complete_image(patch_path, network_weight_file, 
+                           convert_gray=False):
     image_number = re.search('_(.*).hdf5', patch_path).group(1)
     print('[INFO] Load image number {} ... '.format(image_number))
-    data, ground_truth = dio.load_vaihingen_image(patch_path, image_number)
+    data, ground_truth = dio.load_vaihingen_image(patch_path, image_number,
+                                                  convert_gray=convert_gray)
     print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
 
     # plot the input:
@@ -150,7 +153,7 @@ def predict_complete_image(patch_path, network_weight_file):
     # define image size and network input/output size:
     im_h = data.shape[0]
     im_w = data.shape[1]
-    s = 256
+    s = cfg.PATCH_SIZE
 
     print('[INFO] Apply network to image ... ')
     # iterate over the complete image:
@@ -204,8 +207,11 @@ def predict_complete_image(patch_path, network_weight_file):
 
     # store the % of correct predicted pixels per label in a dict
     results["label_accuracy"] = {}
-    for i, label in enumerate(glob_label_list):
-        results["label_accuracy"][label] = "{}%".format(100.*label_accuracy[i])
+    i_label = 0
+    for label in glob_label_list:
+        results["label_accuracy"][label] = "{}%".format(100.*
+                                                       label_accuracy[i_label])
+        i_label += 1
 
     num_labels_in_prediction = int(np.max(prediction))
     label_indecies = np.arange(num_labels_in_prediction).tolist()
@@ -217,9 +223,10 @@ def predict_complete_image(patch_path, network_weight_file):
     return results
 
 # function to apply a trained network to a whole image:
-def predict_complete_image_jpg(patch_path, network_weight_file):
+def predict_complete_image_jpg(patch_path, network_weight_file,
+                               convert_gray=False):
 
-    data = dio.load_image_jpg(patch_path)
+    data = dio.load_image_jpg(patch_path, convert_gray=convert_gray)
     print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
     total_pixels = data.shape[0]*data.shape[1]
 
@@ -236,7 +243,7 @@ def predict_complete_image_jpg(patch_path, network_weight_file):
     # define image size and network input/output size:
     im_h = data.shape[0]
     im_w = data.shape[1]
-    s = 256
+    s = cfg.PATCH_SIZE
 
     print('[INFO] Apply network to image ... ')
     # iterate over the complete image:
@@ -271,12 +278,17 @@ def predict_complete_image_jpg(patch_path, network_weight_file):
                 "label_pixels" : {},
                 "label_pixels_fraction": {}
               }
-    for i, label in enumerate(glob_label_list):
-        label_sum = (prediction == float(i)).sum()
+
+    print("[DEBUG] unqiue values in prediction: {}".format(np.unique(prediction)))
+    
+    i_label = 0
+    for label in glob_label_list:
+        label_sum = (prediction == float(i_label + 1.)).sum()
         results["label_pixels"][label] = label_sum
         results["label_pixels_fraction"][label] = np.round(
                                                 label_sum/float(total_pixels),
                                                 5)
+        i_label += 1
 
     print("[INFO] Results:")
     print('{:20s} \t {:>12s} \t {:>8s}'.format("Labels", "pixels", "fraction"))

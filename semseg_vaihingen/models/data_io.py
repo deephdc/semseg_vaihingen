@@ -5,41 +5,101 @@ from os import path
 
 import sys
 import argparse
+import semseg_vaihingen.config as cfg
 
+from PIL import Image
 # load jpeg or png image:
 # use standard tools of Keras (skip cv2)
 from keras import backend
 from keras.preprocessing.image import load_img
 from keras.preprocessing.image import img_to_array
 
-def load_image_jpg(file_path):
+
+# obsolete, i.e not used
+def rgb2gray(rgb):
+    '''
+    Function to convert RGB to gray using formula in 
+    https://pillow.readthedocs.io/en/3.2.x/reference/Image.html#PIL.Image.Image.convert
+    '''
+    return np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])
+
+
+def image_to_gray(data_in):
+    '''
+    Function to convert image data into grayscale.
+    :param data_in: input array, must be (u)int8 type (0..255)!
+    '''
+    debug = False
+    img_bw = Image.fromarray(data_in, 'RGB').convert('L')
+    data_bw = img_to_array(img_bw, dtype='int')
+    data = np.concatenate((data_bw, data_bw, data_bw), axis=2)
+    print("[INFO] data_in.shape: {}, data_bw.shape: {}, data.shape: {}".format(
+           data_in.shape, data_bw.shape, data.shape))
+    print("[INFO] data_in.type: {}, data_bw.type: {}, data.type: {}".format(
+           data_in.dtype, data_bw.dtype, data.dtype))
+
+    if debug:
+        print("[DEBUG] data_in {}".format(data_in[:5,:5,]))
+        print("[DEBUG] data_bw {}".format(data_bw[:5,:5,]))
+        print("[DEBUG] data {}".format(data[:5,:5,]))
+
+    return data
+
+def load_image_jpg(file_path, convert_gray=False):
+    debug = False
     # set default dimension ordering as for TensorFlow
     backend.set_image_dim_ordering('tf')
     # load the image
     img = load_img(file_path)
     # convert to numpy array
-    data = img_to_array(img, dtype='int')
+    data_raw = img_to_array(img, dtype='uint8')
+    
+    if debug:
+        print("[DEBUG] data_raw {}".format(data_raw[:5,:5,]))
+    
+    if convert_gray:
+        print("[INFO] Use conversation to grayscale!")
+        data = image_to_gray(data_raw)
+        if debug:
+            print("[DEBUG] data {}".format(data[:5,:5,]))
+    else:
+        data = data_raw
 
-    #print("[DEBUG] data shape: {}".format(data.shape))
-    #print("[DEBUG] data {}".format(data[:10,:10,]))
+
 
     return data
 
 
-# load one of the vaihingen images, specified by image_number; by default only the first 3 channels are taken:
-def load_vaihingen_image(filename, image_number, only_three_channels=True, show_properties=False):
+# load one of the vaihingen images, specified by image_number; 
+# by default only the first 3 channels are taken:
+def load_vaihingen_image(filename, image_number, 
+                         only_three_channels=True, show_properties=False,
+                         convert_gray=False):
+    debug = False
     # load the data and ground truth:
     f = h5py.File(filename)
     ground_truth = np.array(f['y_{}'.format(image_number)])
     ground_truth = np.transpose(ground_truth)
-    data = np.array(f['x_{}'.format(image_number)])
-    data = np.transpose(data)
+    data_raw = np.array(f['x_{}'.format(image_number)])
+    data_raw = np.transpose(data_raw)
     f.close()
 
     # only use the first three channels:
     if only_three_channels:
-        data = data[:, :, :3]
+        data_raw = data_raw[:, :, :3]
     
+    if debug:
+        print("[DEBUG] data shape: {}".format(data_raw.shape))
+        print("[DEBUG] data {}".format(data_raw[:5,:5,]))
+    
+    if convert_gray:
+        print("[INFO] Use conversation to grayscale!")
+        data = image_to_gray(data_raw)
+        if debug:
+            print("[DEBUG] data {}".format(data[:5,:5,]))
+    else:
+        data = data_raw
+
     # show properties of the data and ground truth:
     if show_properties:
         print('- Ground truth:')
@@ -77,10 +137,11 @@ def image_to_dataset(filename, image_number, window_shape, overlap_factor):
     return input_list, output_list
 
 
-# generate dataset consisting of 256x256 sized image patches; spatial overlap of the patches can be specified
+# generate dataset consisting of 256x256 sized image patches (defined in config.py)
+# spatial overlap of the patches can be specified
 def generate_dataset(data_path, image_numbers, overlap_factor):
     # input / output size of the FCN:
-    size = 256
+    size = cfg.PATCH_SIZE
 
     # specify filename and directory:
     file_directory = data_path
@@ -93,7 +154,7 @@ def generate_dataset(data_path, image_numbers, overlap_factor):
     y_list = []
     for i in image_numbers:
         file = path.join(file_directory, filename + str(i) + file_extension)
-        print file
+        print(file)
         x, y = image_to_dataset(file, i, [size, size], overlap_factor)
         x_list.extend(x)
         y_list.extend(y)
@@ -123,6 +184,7 @@ def load_data(name):
     f = h5py.File(name)
     x = np.array(f['x'], dtype=np.float32)
     y = np.array(f['y'], dtype=np.uint8)
+    print("[DEBUG] load_data, x.shape: {}".format(x.shape))
     return x, y
 
 
@@ -142,8 +204,8 @@ def main():
     x_train, y_train = generate_dataset(data_path, training_nums, overlap)
     x_val, y_val = generate_dataset(data_path, validation_nums, overlap)
 
-    save_dataset(path.join(output_path,'vaihingen_train.hdf5'), x_train, y_train)
-    save_dataset(path.join(output_path,'vaihingen_val.hdf5'), x_val, y_val)
+    save_dataset(path.join(output_path, cfg.TRAINING_DATA), x_train, y_train)
+    save_dataset(path.join(output_path, cfg.VALIDATION_DATA), x_val, y_val)
 
 
 if __name__ == '__main__':

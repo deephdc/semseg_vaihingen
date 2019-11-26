@@ -1,5 +1,6 @@
 # imports
 import numpy as np
+import semseg_vaihingen.config as cfg
 from sklearn.utils import shuffle
 
 
@@ -47,7 +48,7 @@ def choose_augmentation(z, num):
 
 # apply one random augmentation to every image in the dataset:
 def every_element_randomly_once(x, y):
-    rands = np.random.randint(1, 6, x.shape[0])
+    rands = np.random.randint(1, cfg.NUM_LABELS, x.shape[0])
     x_aug = np.zeros(x.shape, dtype=x.dtype)
     y_aug = np.zeros(y.shape, dtype=y.dtype)
     for i, r in enumerate(rands):
