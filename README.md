@@ -1,12 +1,8 @@
 2D semantic segmentation
 ==============================
 
-[![Build Status](https://jenkins.indigo-datacloud.eu/buildStatus/icon?job=Pipeline-as-code%2FDEEP-OC-org%2Fsemseg_vaihingen%2Ftest)](https://jenkins.indigo-datacloud.eu/job/Pipeline-as-code/job/DEEP-OC-org/job/semseg_vaihingen/job/test/)
+[![Build Status](https://jenkins.indigo-datacloud.eu/buildStatus/icon?job=Pipeline-as-code%2FDEEP-OC-org%2Fsemseg_vaihingen%2Fmaster)](https://jenkins.indigo-datacloud.eu/job/Pipeline-as-code/job/DEEP-OC-org/job/semseg_vaihingen/job/master/)
 
-----
-**Be careful, 'test' branch!**
-
-----
 
 2D semantic segmentation (Vaihingen dataset)
 
