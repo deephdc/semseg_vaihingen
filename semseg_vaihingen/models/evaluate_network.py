@@ -195,7 +195,7 @@ def predict_complete_image(patch_path, network_weight_file,
     #print('Overall accuracy: {}%'.format(np.round(100*num_cor/(im_w*im_h), 1)))
     overall_acc = np.divide(float(100*num_cor), float(im_w*im_h))
     print(('[INFO] Overall accuracy: %0.2f'% overall_acc))
-    results["overall_accuracy"] = '%0.2f' % overall_acc
+    results["overall_accuracy"] = '%0.2f' % float(overall_acc)
 
     # calculate the confusion matrix:
     confusion, label_accuracy = analyze_result(ground_truth, 
@@ -274,7 +274,7 @@ def predict_complete_image_jpg(patch_path, network_weight_file,
     create_colormap(prediction, title='Classification map', 
                     labels = labels_in_prediction, legend=True)
 
-    results = { "total_pixels" : total_pixels,
+    results = { "total_pixels" : int(total_pixels),
                 "label_pixels" : {},
                 "label_pixels_fraction": {}
               }
@@ -284,10 +284,10 @@ def predict_complete_image_jpg(patch_path, network_weight_file,
     i_label = 0
     for label in glob_label_list:
         label_sum = (prediction == float(i_label + 1.)).sum()
-        results["label_pixels"][label] = label_sum
-        results["label_pixels_fraction"][label] = np.round(
+        results["label_pixels"][label] = int(label_sum)
+        results["label_pixels_fraction"][label] = float(np.round(
                                                 label_sum/float(total_pixels),
-                                                5)
+                                                5))
         i_label += 1
 
     print("[INFO] Results:")

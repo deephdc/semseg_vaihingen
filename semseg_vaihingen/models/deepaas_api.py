@@ -13,6 +13,7 @@ from keras import backend
 
 import flask
 from werkzeug.exceptions import BadRequest
+from PIL import Image
 
 # import project's config.py
 import semseg_vaihingen.config as cfg
@@ -93,6 +94,7 @@ def get_metadata():
 
     return meta
 
+#def warm()
 
 def catch_data_error(data):
     # Error catch: wrong image format
@@ -111,54 +113,51 @@ def predict_file(path):
     return message
 
 
-def predict_data(*args, **kwargs):
+def predict(**args):
     """
     Function to make prediction on an uploaded image file
     """
 
 
-    prediction_results = { "status" : "ok",
-                           "prediction": {} 
-                         }
+    prediction_results = { "prediction" : {}}
     
     imgs = []
     filenames = [] 
     
-    # Check and store data
-    for arg in args:
-        files = arg['files']
-        if not isinstance(files, list):
+    files = args['files']
+    
+    if not isinstance(files, list):
             files = [files]
-        for f in files:
-            imgs.append(f)
-            #catch_data_error(f.filename)
+    for f in files:
+        imgs.append(f)
+        #catch_data_error(f.filename)
 
-        if arg['model_weights_load'] is not None:
-            model_path = os.path.join(
-                                    cfg.MODEL_DIR, 
-                                    yaml.safe_load(arg['model_weights_load']))
-        else:
+    if args['model_weights_load'] is not None:
+        model_path = os.path.join(
+            cfg.MODEL_DIR,
+            yaml.safe_load(args['model_weights_load']))
+    else:
             model_path = os.path.join(cfg.MODEL_DIR, cfg.MODEL_WEIGHTS_FILE)
 
     convert_gray = False
-    if 'convert_grayscale' in kwargs:
+    if 'convert_grayscale' in args:
         convert_gray = yaml.safe_load(args['convert_grayscale'])
- 
+    
     for image in imgs:
         image_name = image.filename
-        f = open("/tmp/%s" % image_name, "w+")
-        image.save(f.name)
-        f.close
-        filenames.append(f.name)
-        print(("Stored file (temporarily) at: {} \t Size: {}".format(f.name,
-        os.path.getsize(f.name))))
+        image_tmp = Image.open(image_name)
+        image_form = image_tmp.format
+        image_name = image_name + "." + image_form.lower()
+        image_tmp.save("%s" % image_name)
+        print(("Stored file (temporarily) at: {} \t Size: {}".format(image_name,
+        os.path.getsize(image_name))))
 
         prediction_results["prediction"].update( {"file_name" : image_name} ) 
         # Perform prediction
         try: 
             # Clear possible pre-existing sessions. important!
             backend.clear_session()
-            model_retrieve = yaml.safe_load(arg.model_retrieve)
+            model_retrieve = yaml.safe_load(args['model_retrieve'])
             if not os.path.exists(model_path) or model_retrieve:
                 model_dir, model_file = os.path.split(model_path)
                 model_file_zip = model_file + '.zip'
@@ -175,7 +174,7 @@ def predict_data(*args, **kwargs):
                 
                 # if .zip is present locally, de-archive it
                 if os.path.exists(store_zip_path):
-                    print(("[INFO] {} was downloaded. Unzipping...".format(store_zip_path)))
+                    print("[INFO] {} was downloaded. Unzipping...".format(store_zip_path))
                     data_zip = zipfile.ZipFile(store_zip_path, 'r')
                     data_zip.extractall(model_dir)
                     data_zip.close()
@@ -185,18 +184,18 @@ def predict_data(*args, **kwargs):
 
 
             # Error catch: wrong image format
-            filename, ext = os.path.splitext(f.name)
+            filename, ext = os.path.splitext(image_name)
             ext = ext.lower()
             print(("[DEBUG] filename: {}, ext: {}".format(filename, ext)))
             data_type = 'any'
             if ext == '.hdf5' and "vaihingen_" in filename:
-                prediction = predict_resnet50.predict_complete_image(f.name, 
+                prediction = predict_resnet50.predict_complete_image(image_name, 
                                                                      model_path,
                                                                      convert_gray)
                 data_type = 'vaihingen'
             elif ( ext == '.jpeg' or ext == '.jpg' or ext == '.png' 
                    or ext == '.tif' or ext == '.tiff' ):
-                prediction = predict_resnet50.predict_complete_image_jpg(f.name, 
+                prediction = predict_resnet50.predict_complete_image_jpg(image_name, 
                                                                          model_path,
                                                                          convert_gray)
             else:
@@ -208,26 +207,18 @@ def predict_data(*args, **kwargs):
         except Exception as e:
             raise e
         finally:
-            os.remove(f.name)
+            os.remove(image_name)
 
     # Build result file and stream it back
     result_pdf = resfiles.create_pdf(prediction_results["prediction"],
                                      data_type=data_type)
 
-    return flask.send_file(filename_or_fp=result_pdf,
-                           as_attachment=True,
-                           attachment_filename=os.path.basename(result_pdf))
+    #return flask.send_file(filename_or_fp=result_pdf,
+                          # as_attachment=True,
+                          # attachment_filename=os.path.basename(result_pdf))
 
-#    return prediction_results 
+    return prediction_results 
 
-
-def predict_url(*args):
-    """
-    Function to make prediction on a URL
-    """
-
-    message = 'Not implemented in the model (predict_url)'
-    return message
 
 
 ###
@@ -238,7 +229,7 @@ from flaat import Flaat
 flaat = Flaat()
 
 @flaat.login_required()
-def train(train_args):
+def train(**args):
     """
     Train network
     train_args : dict
@@ -319,29 +310,11 @@ def get_train_args():
     Returns a dict of dicts to feed the deepaas API parser
     """
     train_args = cfg.train_args
-
-    # convert default values and possible 'choices' into strings
-    for key, val in list(train_args.items()):
-        val['default'] = str(val['default']) #yaml.safe_dump(val['default']) #json.dumps(val['default'])
-        if 'choices' in val:
-            val['choices'] = [str(item) for item in val['choices']]
-
     return train_args
 
-
-# !!! deepaas>=0.5.0 calls get_test_args() to get args for 'predict'
-def get_test_args():
+def get_predict_args():
     predict_args = cfg.predict_args
-
-    # convert default values and possible 'choices' into strings
-    for key, val in list(predict_args.items()):
-        val['default'] = str(val['default'])  # yaml.safe_dump(val['default']) #json.dumps(val['default'])
-        if 'choices' in val:
-            val['choices'] = [str(item) for item in val['choices']]
-        #print(val['default'], type(val['default']))
-
     return predict_args
-
 
 # during development it might be practical 
 # to check your code from the command line
