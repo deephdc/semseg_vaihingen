@@ -209,15 +209,19 @@ def predict(**args):
         finally:
             os.remove(image_name)
 
-    # Build result file and stream it back
-    result_pdf = resfiles.create_pdf(prediction_results["prediction"],
-                                     data_type=data_type)
+    if(args['accept'] == 'application/pdf'):
+        
+            # Build result file and stream it back
+            result_pdf = resfiles.create_pdf(prediction_results["prediction"],
+                                             data_type=data_type)
+            prediction_results = open(result_pdf, 'rb')
+            return prediction_results
 
     #return flask.send_file(filename_or_fp=result_pdf,
                           # as_attachment=True,
                           # attachment_filename=os.path.basename(result_pdf))
-
-    return prediction_results 
+    else: 
+        return prediction_results 
 
 
 

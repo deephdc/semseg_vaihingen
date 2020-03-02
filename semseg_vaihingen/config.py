@@ -4,7 +4,7 @@
 """
 
 from os import path
-from webargs import fields
+from webargs import fields, validate
 
 
 # identify basedir for the package
@@ -74,11 +74,18 @@ predict_args = { "files": fields.Field(
                     required= False
                 ),
                 'model_retrieve':fields.Str(
-                    missing= False,
-                    enum= [False, True],
+                    missing = False,
+                    enum = [False, True],
                     description = 'Force model update from the remote repository',
                     required =  False
                 ),
+                
+                "accept" : fields.Str(
+                    require =False,
+                    description ="Returns an image or a json with the box coordinates.",
+                    missing ='application/pdf',
+                    validate =validate.OneOf(['application/pdf', 'application/json'])),
+                
                #'convert_grayscale':   fields.Str(
                #     missing = True,
                #     enum =  [False, True],
