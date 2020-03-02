@@ -49,8 +49,8 @@ def rclone_copy(src_path, dest_path, cmd='copy',):
         src_path = '/' + src_path.lstrip('/')
         src_dir, src_file = os.path.split(src_path)
         remote_link = cfg.MODEL_REMOTE_PUBLIC + src_dir + '&files=' + src_file
-        print("[INFO] Trying to download {} from {}".format(src_file,
-                                                            remote_link))
+        print(("[INFO] Trying to download {} from {}".format(src_file,
+                                                            remote_link)))
         command = (['rclone', 'copyurl', remote_link, dest_path])
     else:
         message = "[ERROR] Wrong 'cmd' value! Allowed 'copy', 'copyurl', received: " + cmd
@@ -150,8 +150,8 @@ def predict_data(*args, **kwargs):
         image.save(f.name)
         f.close
         filenames.append(f.name)
-        print("Stored file (temporarily) at: {} \t Size: {}".format(f.name,
-        os.path.getsize(f.name)))
+        print(("Stored file (temporarily) at: {} \t Size: {}".format(f.name,
+        os.path.getsize(f.name))))
 
         prediction_results["prediction"].update( {"file_name" : image_name} ) 
         # Perform prediction
@@ -164,7 +164,7 @@ def predict_data(*args, **kwargs):
                 model_file_zip = model_file + '.zip'
                 remote_src_path = os.path.join('models', model_file_zip)
                 store_zip_path = os.path.join(model_dir, model_file_zip)
-                print("[INFO] File {} will be retrieved from the remote.".format(store_zip_path))
+                print(("[INFO] File {} will be retrieved from the remote.".format(store_zip_path)))
                 output, error = rclone_copy(src_path=remote_src_path,
                                             dest_path=store_zip_path,
                                             cmd='copyurl')
@@ -175,7 +175,7 @@ def predict_data(*args, **kwargs):
                 
                 # if .zip is present locally, de-archive it
                 if os.path.exists(store_zip_path):
-                    print("[INFO] {} was downloaded. Unzipping...".format(store_zip_path))
+                    print(("[INFO] {} was downloaded. Unzipping...".format(store_zip_path)))
                     data_zip = zipfile.ZipFile(store_zip_path, 'r')
                     data_zip.extractall(model_dir)
                     data_zip.close()
@@ -187,7 +187,7 @@ def predict_data(*args, **kwargs):
             # Error catch: wrong image format
             filename, ext = os.path.splitext(f.name)
             ext = ext.lower()
-            print("[DEBUG] filename: {}, ext: {}".format(filename, ext))
+            print(("[DEBUG] filename: {}, ext: {}".format(filename, ext)))
             data_type = 'any'
             if ext == '.hdf5' and "vaihingen_" in filename:
                 prediction = predict_resnet50.predict_complete_image(f.name, 
@@ -268,8 +268,8 @@ def train(train_args):
     validation_data = os.path.join(cfg.DATA_DIR, cfg.VALIDATION_DATA)
     remote_data_storage = os.path.join(cfg.REMOTE_STORAGE, 'data')
     if not (os.path.exists(training_data) or os.path.exists(validation_data)):
-        print("[INFO] Either %s or %s NOT found locally, download them from %s" % 
-              (training_data, validation_data, remote_data_storage))
+        print(("[INFO] Either %s or %s NOT found locally, download them from %s" % 
+              (training_data, validation_data, remote_data_storage)))
         output, error = rclone_copy(remote_data_storage, cfg.DATA_DIR)
         if error:
             message = "[ERROR] training data not copied. rclone returned: " + error
@@ -286,7 +286,7 @@ def train(train_args):
     run_results["training"] = yaml.safe_load(json.dumps(params._asdict(), 
                                                         default=str))
 
-    print("Run results: " + str(run_results))
+    print(("Run results: " + str(run_results)))
 
     # REMOTE_MODELS_UPLOAD is defined in config.py #vk
     upload_back = yaml.safe_load(train_args.upload_back)
@@ -305,11 +305,11 @@ def train(train_args):
         
         output, error = rclone_copy(model_zip_path, cfg.REMOTE_MODELS_UPLOAD)
         if error:
-            print("[ERROR] rclone returned: {}".format(error))
+            print(("[ERROR] rclone returned: {}".format(error)))
         else:
             os.remove(model_zip_path)
     else:
-        print("[INFO] Created weights file, %s, was NOT uploaded!" % model_path)
+        print(("[INFO] Created weights file, %s, was NOT uploaded!" % model_path))
 
     return run_results
 
@@ -321,7 +321,7 @@ def get_train_args():
     train_args = cfg.train_args
 
     # convert default values and possible 'choices' into strings
-    for key, val in train_args.items():
+    for key, val in list(train_args.items()):
         val['default'] = str(val['default']) #yaml.safe_dump(val['default']) #json.dumps(val['default'])
         if 'choices' in val:
             val['choices'] = [str(item) for item in val['choices']]
@@ -334,7 +334,7 @@ def get_test_args():
     predict_args = cfg.predict_args
 
     # convert default values and possible 'choices' into strings
-    for key, val in predict_args.items():
+    for key, val in list(predict_args.items()):
         val['default'] = str(val['default'])  # yaml.safe_dump(val['default']) #json.dumps(val['default'])
         if 'choices' in val:
             val['choices'] = [str(item) for item in val['choices']]
@@ -364,7 +364,7 @@ if __name__ == '__main__':
 
     # get arguments configured for get_train_args()
     train_args = get_train_args()
-    for key, val in train_args.items():
+    for key, val in list(train_args.items()):
         parser.add_argument('--%s' % key,
                             default=val['default'],
                             type=type(val['default']),

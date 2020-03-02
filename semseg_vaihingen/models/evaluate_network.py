@@ -1,7 +1,7 @@
 # imports
 import semseg_vaihingen.config as cfg
-import model_generator
-import data_io as dio
+from . import model_generator
+from . import data_io as dio
 
 import numpy as np
 from sklearn import metrics
@@ -60,7 +60,7 @@ def create_colormap(label_matrix, title, labels=glob_label_list,
         # generate and show the map
         ax1.imshow(label_matrix, cmap=label_cmap)
     else:
-        print("[DEBUG] label_matrix.shape={}".format(label_matrix.shape))
+        print(("[DEBUG] label_matrix.shape={}".format(label_matrix.shape)))
         ax1.imshow(label_matrix)
 
     plt.title(title)
@@ -109,12 +109,12 @@ def print_labelwise_accuracy(confusion, label_accuracy):
     print('')
     print("[INFO] Results:")
     print('Labelwise accuracy: ')
-    print('{:20s} \t {:>10s} \t {:>10s}'.format("Labels", "pixels", "accuracy"))
-    print("-".rjust(50,"-"))
+    print(('{:20s} \t {:>10s} \t {:>10s}'.format("Labels", "pixels", "accuracy")))
+    print(("-".rjust(50,"-")))
     for i, label in enumerate(glob_label_list):
-        print('{:20s} \t {:10d} \t {:10.4f}%'.format(label, 
+        print(('{:20s} \t {:10d} \t {:10.4f}%'.format(label, 
                                                      overall[i], 
-                                                     100.*label_accuracy[i]))
+                                                     100.*label_accuracy[i])))
     print('')
 
 
@@ -122,10 +122,10 @@ def print_labelwise_accuracy(confusion, label_accuracy):
 def predict_complete_image(patch_path, network_weight_file, 
                            convert_gray=False):
     image_number = re.search('_(.*).hdf5', patch_path).group(1)
-    print('[INFO] Load image number {} ... '.format(image_number))
+    print(('[INFO] Load image number {} ... '.format(image_number)))
     data, ground_truth = dio.load_vaihingen_image(patch_path, image_number,
                                                   convert_gray=convert_gray)
-    print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
+    print(('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1])))
 
     # plot the input:
     create_colormap(data, title='Input image patch', colormap=False)
@@ -133,17 +133,17 @@ def predict_complete_image(patch_path, network_weight_file,
     num_labels_in_ground_truth = int(np.max(ground_truth))
     label_indecies = np.arange(num_labels_in_ground_truth).tolist()
     labels_in_ground_truth = glob_label_list[label_indecies]
-    print("[DEBUG] label indecies: {}".format(label_indecies))
-    print("[DEBUG] num_labels_ground_truth={}, labels={}".format(
+    print(("[DEBUG] label indecies: {}".format(label_indecies)))
+    print(("[DEBUG] num_labels_ground_truth={}, labels={}".format(
                                                    num_labels_in_ground_truth,
-                                                   labels_in_ground_truth))
+                                                   labels_in_ground_truth)))
 
     # create a colormap of the ground truth:
     create_colormap(ground_truth, title='Groundtruth',
                     labels=labels_in_ground_truth,
                     colormap=True, legend=True)
 
-    print('[INFO] Load a trained FCN from {} ...'.format(network_weight_file))
+    print(('[INFO] Load a trained FCN from {} ...'.format(network_weight_file)))
     model = model_generator.generate_resnet50_fcn(use_pretraining=False)
     model.load_weights(network_weight_file)
 
@@ -194,7 +194,7 @@ def predict_complete_image(patch_path, network_weight_file,
     
     #print('Overall accuracy: {}%'.format(np.round(100*num_cor/(im_w*im_h), 1)))
     overall_acc = np.divide(float(100*num_cor), float(im_w*im_h))
-    print('[INFO] Overall accuracy: %0.2f'% overall_acc)
+    print(('[INFO] Overall accuracy: %0.2f'% overall_acc))
     results["overall_accuracy"] = '%0.2f' % overall_acc
 
     # calculate the confusion matrix:
@@ -227,13 +227,13 @@ def predict_complete_image_jpg(patch_path, network_weight_file,
                                convert_gray=False):
 
     data = dio.load_image_jpg(patch_path, convert_gray=convert_gray)
-    print('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1]))
+    print(('[INFO] Image size: (%d x %d)' % (data.shape[0], data.shape[1])))
     total_pixels = data.shape[0]*data.shape[1]
 
     # plot the input:
     create_colormap(data, title='Input image patch', colormap=False)
 
-    print('[INFO] Load a trained FCN from {} ...'.format(network_weight_file))
+    print(('[INFO] Load a trained FCN from {} ...'.format(network_weight_file)))
     model = model_generator.generate_resnet50_fcn(use_pretraining=False)
     model.load_weights(network_weight_file)
 
@@ -279,7 +279,7 @@ def predict_complete_image_jpg(patch_path, network_weight_file,
                 "label_pixels_fraction": {}
               }
 
-    print("[DEBUG] unqiue values in prediction: {}".format(np.unique(prediction)))
+    print(("[DEBUG] unqiue values in prediction: {}".format(np.unique(prediction))))
     
     i_label = 0
     for label in glob_label_list:
@@ -291,12 +291,12 @@ def predict_complete_image_jpg(patch_path, network_weight_file,
         i_label += 1
 
     print("[INFO] Results:")
-    print('{:20s} \t {:>12s} \t {:>8s}'.format("Labels", "pixels", "fraction"))
-    print("-".rjust(48,"-"))
-    for label, value in results["label_pixels"].items():
-        print('{:20s}: \t {:12d} \t {:8f}'.format(label, value, 
-                                      results["label_pixels_fraction"][label]))
-    print('{:20s}: \t {:12d}'.format("Total pixels", results["total_pixels"]))
+    print(('{:20s} \t {:>12s} \t {:>8s}'.format("Labels", "pixels", "fraction")))
+    print(("-".rjust(48,"-")))
+    for label, value in list(results["label_pixels"].items()):
+        print(('{:20s}: \t {:12d} \t {:8f}'.format(label, value, 
+                                      results["label_pixels_fraction"][label])))
+    print(('{:20s}: \t {:12d}'.format("Total pixels", results["total_pixels"])))
  
     return results
 
