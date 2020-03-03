@@ -229,10 +229,10 @@ def predict(**args):
 # Comment the following three lines if you open training for everybody, 
 # i.e. do *not* need any authorization at all
 ###
-from flaat import Flaat
-flaat = Flaat()
+#from flaat import Flaat
+#flaat = Flaat()
 
-@flaat.login_required()
+#@flaat.login_required()
 def train(**args):
     """
     Train network
@@ -246,14 +246,14 @@ def train(**args):
                     "training": {},
                   }
 
-    run_results["train_args"] = train_args
+    run_results["train_args"] = args
 
     # Clear possible pre-existing sessions. important!
     backend.clear_session()
 
-    if train_args['model_weights_save'] is not None:
+    if args['model_weights_save'] is not None:
         model_path = os.path.join(cfg.MODEL_DIR, 
-                             yaml.safe_load(train_args['model_weights_save']))
+                             yaml.safe_load(args['model_weights_save']))
     else:
         model_path = os.path.join(cfg.MODEL_DIR, cfg.MODEL_WEIGHTS_FILE)
 
@@ -272,11 +272,11 @@ def train(**args):
 
     params = train_resnet50.train(cfg.DATA_DIR,
                                   model_path,
-                                  yaml.safe_load(train_args.augmentation),
-                                  yaml.safe_load(train_args.transfer_learning),
-                                  yaml.safe_load(train_args.n_gpus),
-                                  yaml.safe_load(train_args.n_epochs),
-                                  yaml.safe_load(train_args.batch_size))
+                                  yaml.safe_load(args['augmentation']),
+                                  yaml.safe_load(args['transfer_learning']),
+                                  yaml.safe_load(args['n_gpus']),
+                                  yaml.safe_load(args['n_epochs']),
+                                  yaml.safe_load(args['batch_size']))
     
     run_results["training"] = yaml.safe_load(json.dumps(params._asdict(), 
                                                         default=str))
@@ -284,7 +284,7 @@ def train(**args):
     print(("Run results: " + str(run_results)))
 
     # REMOTE_MODELS_UPLOAD is defined in config.py #vk
-    upload_back = yaml.safe_load(train_args.upload_back)
+    upload_back = yaml.safe_load(args['upload_back'])
     if(upload_back and os.path.exists(model_path)):
         # zip the trained model, aka savedmodel:
         # adapted from https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory-in-python

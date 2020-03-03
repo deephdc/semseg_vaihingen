@@ -14,7 +14,7 @@ DATA_DIR = path.join(BASE_DIR,'data') # Location of model data and output files
 MODEL_WEIGHTS_FILE = 'resnet50_fcn_weights.hdf5'
 MODEL_DIR = path.join(BASE_DIR,'models') # Location + name of the output model
 MODEL_REMOTE_PUBLIC = 'https://nc.deep-hybrid-datacloud.eu/s/eTqJexZ5PcBxXR6/download?path='
-REMOTE_STORAGE = 'rshare:/deep-oc-apps/semseg_vaihingen'
+REMOTE_STORAGE = 'rshare:/semseg_vaihingen'
 REMOTE_MODELS_UPLOAD = path.join(REMOTE_STORAGE, 'models')
 NUM_LABELS = 6  # max number of labels
 PATCH_SIZE = 256
