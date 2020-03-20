@@ -12,6 +12,7 @@ import subprocess
 from keras import backend
 
 import flask
+import h5py
 from werkzeug.exceptions import BadRequest
 from PIL import Image
 
@@ -145,14 +146,23 @@ def predict(**args):
     
     for image in imgs:
         image_name = image.filename
-        image_tmp = Image.open(image_name)
-        image_form = image_tmp.format
-        image_name = image_name + "." + image_form.lower()
-        image_tmp.save("%s" % image_name)
-        print(("Stored file (temporarily) at: {} \t Size: {}".format(image_name,
-        os.path.getsize(image_name))))
+        original_name =  "/tmp/%s" % image.original_filename
+        os.rename(image.filename, original_name) 
+        filename, image_form = os.path.splitext(image.original_filename)
+        
+        if image_form.lower() == '.hdf5':
+            hf = h5py.File(original_name, 'r')
+            print([key for key in hf.keys()])
+            hf.close()
+            
+        else:
+            image_tmp = Image.open(original_name)
+            image_tmp.save("%s" % original_name)
+            
+        print(("Stored file (temporarily) at: {} \t Size: {}".format(original_name,
+        os.path.getsize(original_name))))
 
-        prediction_results["prediction"].update( {"file_name" : image_name} ) 
+        prediction_results["prediction"].update( {"file_name" : original_name} ) 
         # Perform prediction
         try: 
             # Clear possible pre-existing sessions. important!
@@ -184,18 +194,18 @@ def predict(**args):
 
 
             # Error catch: wrong image format
-            filename, ext = os.path.splitext(image_name)
+            filename, ext = os.path.splitext(original_name)
             ext = ext.lower()
             print(("[DEBUG] filename: {}, ext: {}".format(filename, ext)))
             data_type = 'any'
             if ext == '.hdf5' and "vaihingen_" in filename:
-                prediction = predict_resnet50.predict_complete_image(image_name, 
+                prediction = predict_resnet50.predict_complete_image(original_name, 
                                                                      model_path,
                                                                      convert_gray)
                 data_type = 'vaihingen'
             elif ( ext == '.jpeg' or ext == '.jpg' or ext == '.png' 
                    or ext == '.tif' or ext == '.tiff' ):
-                prediction = predict_resnet50.predict_complete_image_jpg(image_name, 
+                prediction = predict_resnet50.predict_complete_image_jpg(original_name, 
                                                                          model_path,
                                                                          convert_gray)
             else:
@@ -207,7 +217,7 @@ def predict(**args):
         except Exception as e:
             raise e
         finally:
-            os.remove(image_name)
+            os.remove(original_name)
 
     if(args['accept'] == 'application/pdf'):
         
