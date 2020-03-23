@@ -11,7 +11,7 @@
 **Project:** This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has
 received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
 
-This is an example application for ISPRS 2D Semantic Labeling Contest [1](http://www2.isprs.org/commissions/comm3/wg4/semantic-labeling.html):
+This is an example application for [ISPRS 2D Semantic Labeling Contest ](http://www2.isprs.org/commissions/comm3/wg4/semantic-labeling.html):
     "2D semantic segmentation (Vaihingen dataset) that assigns labels to multiple object categories.",
 
 You can find more information about it in the [DEEP Marketplace](https://marketplace.deep-hybrid-datacloud.eu/modules/deep-oc-semseg-vaihingen.html).
