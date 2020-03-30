@@ -118,8 +118,7 @@ def predict(**args):
     """
     Function to make prediction on an uploaded image file
     """
-
-
+    
     prediction_results = { "prediction" : {}}
     
     imgs = []
@@ -198,7 +197,7 @@ def predict(**args):
             ext = ext.lower()
             print(("[DEBUG] filename: {}, ext: {}".format(filename, ext)))
             data_type = 'any'
-            if ext == '.hdf5' and "vaihingen_" in filename:
+            if ext == '.hdf5' and "_" in filename:
                 prediction = predict_resnet50.predict_complete_image(original_name, 
                                                                      model_path,
                                                                      convert_gray)

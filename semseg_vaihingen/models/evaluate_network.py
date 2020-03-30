@@ -132,8 +132,8 @@ def predict_complete_image(patch_path, network_weight_file,
 
     num_labels_in_ground_truth = int(np.max(ground_truth))
     label_indecies = np.arange(num_labels_in_ground_truth).tolist()
+    print(("[DEBUG] label indices: {}".format(label_indecies)))
     labels_in_ground_truth = glob_label_list[label_indecies]
-    print(("[DEBUG] label indecies: {}".format(label_indecies)))
     print(("[DEBUG] num_labels_ground_truth={}, labels={}".format(
                                                    num_labels_in_ground_truth,
                                                    labels_in_ground_truth)))
