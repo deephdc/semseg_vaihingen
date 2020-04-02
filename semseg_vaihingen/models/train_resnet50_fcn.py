@@ -4,11 +4,11 @@ import sys
 import time
 import argparse
 import keras
-import augmentation
-import model_generator
+from . import augmentation
+from . import model_generator
 import numpy as np
-import data_io as dio
-import storeincsv as incsv
+from . import data_io as dio
+from . import storeincsv as incsv
 import semseg_vaihingen.config as cfg
 from keras.utils import to_categorical
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
@@ -51,9 +51,9 @@ def train(data_path,
 
     print('[INFO] Load data ... ')
     x_train, y_train = dio.load_data(os.path.join(data_path, cfg.TRAINING_DATA))
-    print('[INFO] Training samples: {}'.format(x_train.shape))
+    print(('[INFO] Training samples: {}'.format(x_train.shape)))
     x_val, y_val = dio.load_data(os.path.join(data_path, cfg.VALIDATION_DATA))
-    print('[INFO] Validation samples: {}'.format(x_val.shape))
+    print(('[INFO] Validation samples: {}'.format(x_val.shape)))
 
     if augmentation_flag:
         print("[INFO] With augmentation:")
@@ -97,7 +97,7 @@ def train(data_path,
                                       use_pretraining=transfer_learning_flag)
 
         resnet50_fcn_model_tmpl.summary()
-        print("[INFO] Using {} GPUs".format(n_gpus))
+        print(("[INFO] Using {} GPUs".format(n_gpus)))
         resnet50_fcn_model = multi_gpu_model(resnet50_fcn_model_tmpl, 
                                              gpus=n_gpus)
     else:
@@ -132,7 +132,7 @@ def train(data_path,
                                       time_callback],
                            verbose=1)
 
-    print(time_callback.total_duration)
+    print((time_callback.total_duration))
 
     # comment as we save 'best' weights via checkpointer
     #resnet50_fcn_model.save_weights(output_model)
@@ -142,7 +142,7 @@ def train(data_path,
     mn = np.mean(time_callback.durations)
     sd = np.std(time_callback.durations, ddof=1)
 
-    print("[INFO] Mean: ", _mn, mn)
+    print(("[INFO] Mean: ", _mn, mn))
 
     return ParamEntry(datetime.now(), os.path.basename(__file__),
                       time_callback.val_acc, time_callback.val_loss, 
@@ -157,12 +157,12 @@ def main():
     param_entries.append(ParamHeader)
   
     if debug:
-        print(args.data_path)
-        print(args.model)
-        print(args.augmentation)
-        print(args.transfer_learning)
-        print(args.n_epochs)
-        print(args.batch_size)
+        print((args.data_path))
+        print((args.model))
+        print((args.augmentation))
+        print((args.transfer_learning))
+        print((args.n_epochs))
+        print((args.batch_size))
     
     if args.augmentation:
         print(">> with augmentation")
