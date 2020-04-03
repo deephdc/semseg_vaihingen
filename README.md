@@ -32,10 +32,8 @@ You can find more information about it in the [DEEP Marketplace](https://marketp
 
 > **Requirements**
 >
-> This project has been tested in Ubuntu 18.04 with Python 3.6.5. Further package requirements are described in the
+> This project has been tested in Ubuntu 18.04 with Python 3.6. Further package requirements are described in the
 > `requirements.txt` file.
-> - It is a requirement to have [Tensorflow>=1.14.0 installed](https://www.tensorflow.org/install/pip) (either in gpu 
-> or cpu mode). This is not listed in the `requirements.txt` as it [breaks GPU support](https://github.com/tensorflow/tensorflow/issues/7166). 
 
 To start using this framework clone the repo:
 
@@ -68,6 +66,8 @@ Now open http://0.0.0.0:5000/ui and look for the methods belonging to the `semse
 ### Data preprocessing
 
 The first step to train the neural network is to put the training file `vaihingen_train.hdf5` and the validation file `vaihingen_val.hdf5` into `./semseg_vaihingen/data`. More information about how to acquire the vaihingen dataset can be found [here](http://www2.isprs.org/commissions/comm3/wg4/2d-sem-label-vaihingen.html).
+
+A script that converts raw data into hdf5 file is also provided.
 
 ### Train the classifier
 
