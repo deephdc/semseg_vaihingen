@@ -12,7 +12,9 @@ import subprocess
 from keras import backend
 
 import flask
+import h5py
 from werkzeug.exceptions import BadRequest
+from PIL import Image
 
 # import project's config.py
 import semseg_vaihingen.config as cfg
@@ -49,8 +51,8 @@ def rclone_copy(src_path, dest_path, cmd='copy',):
         src_path = '/' + src_path.lstrip('/')
         src_dir, src_file = os.path.split(src_path)
         remote_link = cfg.MODEL_REMOTE_PUBLIC + src_dir + '&files=' + src_file
-        print("[INFO] Trying to download {} from {}".format(src_file,
-                                                            remote_link))
+        print(("[INFO] Trying to download {} from {}".format(src_file,
+                                                            remote_link)))
         command = (['rclone', 'copyurl', remote_link, dest_path])
     else:
         message = "[ERROR] Wrong 'cmd' value! Allowed 'copy', 'copyurl', received: " + cmd
@@ -93,6 +95,7 @@ def get_metadata():
 
     return meta
 
+#def warm()
 
 def catch_data_error(data):
     # Error catch: wrong image format
@@ -111,60 +114,65 @@ def predict_file(path):
     return message
 
 
-def predict_data(*args, **kwargs):
+def predict(**args):
     """
     Function to make prediction on an uploaded image file
     """
-
-
-    prediction_results = { "status" : "ok",
-                           "prediction": {} 
-                         }
+    
+    prediction_results = { "prediction" : {}}
     
     imgs = []
     filenames = [] 
     
-    # Check and store data
-    for arg in args:
-        files = arg['files']
-        if not isinstance(files, list):
+    files = args['files']
+    
+    if not isinstance(files, list):
             files = [files]
-        for f in files:
-            imgs.append(f)
-            #catch_data_error(f.filename)
+    for f in files:
+        imgs.append(f)
+        #catch_data_error(f.filename)
 
-        if arg['model_weights_load'] is not None:
-            model_path = os.path.join(
-                                    cfg.MODEL_DIR, 
-                                    yaml.safe_load(arg['model_weights_load']))
-        else:
+    if args['model_weights_load'] is not None:
+        model_path = os.path.join(
+            cfg.MODEL_DIR,
+            yaml.safe_load(args['model_weights_load']))
+    else:
             model_path = os.path.join(cfg.MODEL_DIR, cfg.MODEL_WEIGHTS_FILE)
 
     convert_gray = False
-    if 'convert_grayscale' in kwargs:
+    if 'convert_grayscale' in args:
         convert_gray = yaml.safe_load(args['convert_grayscale'])
- 
+    
     for image in imgs:
         image_name = image.filename
-        f = open("/tmp/%s" % image_name, "w+")
-        image.save(f.name)
-        f.close
-        filenames.append(f.name)
-        print("Stored file (temporarily) at: {} \t Size: {}".format(f.name,
-        os.path.getsize(f.name)))
+        original_name =  "/tmp/%s" % image.original_filename
+        os.rename(image.filename, original_name) 
+        filename, image_form = os.path.splitext(image.original_filename)
+        
+        if image_form.lower() == '.hdf5':
+            hf = h5py.File(original_name, 'r')
+            print([key for key in hf.keys()])
+            hf.close()
+            
+        else:
+            image_tmp = Image.open(original_name)
+            image_tmp.save("%s" % original_name)
+            
+        print(("Stored file (temporarily) at: {} \t Size: {}".format(original_name,
+        os.path.getsize(original_name))))
 
-        prediction_results["prediction"].update( {"file_name" : image_name} ) 
+        prediction_results["prediction"].update( {"file_name" : original_name} ) 
         # Perform prediction
         try: 
             # Clear possible pre-existing sessions. important!
             backend.clear_session()
-            model_retrieve = yaml.safe_load(arg.model_retrieve)
+            model_retrieve = yaml.safe_load(args['model_retrieve'])
             if not os.path.exists(model_path) or model_retrieve:
                 model_dir, model_file = os.path.split(model_path)
                 model_file_zip = model_file + '.zip'
                 remote_src_path = os.path.join('models', model_file_zip)
                 store_zip_path = os.path.join(model_dir, model_file_zip)
-                print("[INFO] File {} will be retrieved from the remote.".format(store_zip_path))
+                print(("[INFO] File {} will be retrieved from the remote.".format(store_zip_path)))
                 output, error = rclone_copy(src_path=remote_src_path,
                                             dest_path=store_zip_path,
                                             cmd='copyurl')
@@ -185,18 +193,18 @@ def predict_data(*args, **kwargs):
 
 
             # Error catch: wrong image format
-            filename, ext = os.path.splitext(f.name)
+            filename, ext = os.path.splitext(original_name)
             ext = ext.lower()
-            print("[DEBUG] filename: {}, ext: {}".format(filename, ext))
+            print(("[DEBUG] filename: {}, ext: {}".format(filename, ext)))
             data_type = 'any'
-            if ext == '.hdf5' and "vaihingen_" in filename:
-                prediction = predict_resnet50.predict_complete_image(f.name, 
+            if ext == '.hdf5' and "_" in filename:
+                prediction = predict_resnet50.predict_complete_image(original_name, 
                                                                      model_path,
                                                                      convert_gray)
                 data_type = 'vaihingen'
             elif ( ext == '.jpeg' or ext == '.jpg' or ext == '.png' 
                    or ext == '.tif' or ext == '.tiff' ):
-                prediction = predict_resnet50.predict_complete_image_jpg(f.name, 
+                prediction = predict_resnet50.predict_complete_image_jpg(original_name, 
                                                                          model_path,
                                                                          convert_gray)
             else:
@@ -208,37 +216,33 @@ def predict_data(*args, **kwargs):
         except Exception as e:
             raise e
         finally:
-            os.remove(f.name)
+            os.remove(original_name)
 
-    # Build result file and stream it back
-    result_pdf = resfiles.create_pdf(prediction_results["prediction"],
-                                     data_type=data_type)
+    if(args['accept'] == 'application/pdf'):
+        
+            # Build result file and stream it back
+            result_pdf = resfiles.create_pdf(prediction_results["prediction"],
+                                             data_type=data_type)
+            prediction_results = open(result_pdf, 'rb')
+            return prediction_results
 
-    return flask.send_file(filename_or_fp=result_pdf,
-                           as_attachment=True,
-                           attachment_filename=os.path.basename(result_pdf))
+    #return flask.send_file(filename_or_fp=result_pdf,
+                          # as_attachment=True,
+                          # attachment_filename=os.path.basename(result_pdf))
+    else: 
+        return prediction_results 
 
-#    return prediction_results 
-
-
-def predict_url(*args):
-    """
-    Function to make prediction on a URL
-    """
-
-    message = 'Not implemented in the model (predict_url)'
-    return message
 
 
 ###
 # Comment the following three lines if you open training for everybody, 
 # i.e. do *not* need any authorization at all
 ###
-from flaat import Flaat
-flaat = Flaat()
+#from flaat import Flaat
+#flaat = Flaat()
 
-@flaat.login_required()
-def train(train_args):
+#@flaat.login_required()
+def train(**args):
     """
     Train network
     train_args : dict
@@ -251,14 +255,14 @@ def train(train_args):
                     "training": {},
                   }
 
-    run_results["train_args"] = train_args
+    run_results["train_args"] = args
 
     # Clear possible pre-existing sessions. important!
     backend.clear_session()
 
-    if train_args['model_weights_save'] is not None:
+    if args['model_weights_save'] is not None:
         model_path = os.path.join(cfg.MODEL_DIR, 
-                             yaml.safe_load(train_args['model_weights_save']))
+                             yaml.safe_load(args['model_weights_save']))
     else:
         model_path = os.path.join(cfg.MODEL_DIR, cfg.MODEL_WEIGHTS_FILE)
 
@@ -268,8 +272,8 @@ def train(train_args):
     validation_data = os.path.join(cfg.DATA_DIR, cfg.VALIDATION_DATA)
     remote_data_storage = os.path.join(cfg.REMOTE_STORAGE, 'data')
     if not (os.path.exists(training_data) or os.path.exists(validation_data)):
-        print("[INFO] Either %s or %s NOT found locally, download them from %s" % 
-              (training_data, validation_data, remote_data_storage))
+        print(("[INFO] Either %s or %s NOT found locally, download them from %s" % 
+              (training_data, validation_data, remote_data_storage)))
         output, error = rclone_copy(remote_data_storage, cfg.DATA_DIR)
         if error:
             message = "[ERROR] training data not copied. rclone returned: " + error
@@ -277,19 +281,19 @@ def train(train_args):
 
     params = train_resnet50.train(cfg.DATA_DIR,
                                   model_path,
-                                  yaml.safe_load(train_args.augmentation),
-                                  yaml.safe_load(train_args.transfer_learning),
-                                  yaml.safe_load(train_args.n_gpus),
-                                  yaml.safe_load(train_args.n_epochs),
-                                  yaml.safe_load(train_args.batch_size))
+                                  yaml.safe_load(args['augmentation']),
+                                  yaml.safe_load(args['transfer_learning']),
+                                  yaml.safe_load(args['n_gpus']),
+                                  yaml.safe_load(args['n_epochs']),
+                                  yaml.safe_load(args['batch_size']))
     
     run_results["training"] = yaml.safe_load(json.dumps(params._asdict(), 
                                                         default=str))
 
-    print("Run results: " + str(run_results))
+    print(("Run results: " + str(run_results)))
 
     # REMOTE_MODELS_UPLOAD is defined in config.py #vk
-    upload_back = yaml.safe_load(train_args.upload_back)
+    upload_back = yaml.safe_load(args['upload_back'])
     if(upload_back and os.path.exists(model_path)):
         # zip the trained model, aka savedmodel:
         # adapted from https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory-in-python
@@ -305,11 +309,11 @@ def train(train_args):
         
         output, error = rclone_copy(model_zip_path, cfg.REMOTE_MODELS_UPLOAD)
         if error:
-            print("[ERROR] rclone returned: {}".format(error))
+            print(("[ERROR] rclone returned: {}".format(error)))
         else:
             os.remove(model_zip_path)
     else:
-        print("[INFO] Created weights file, %s, was NOT uploaded!" % model_path)
+        print(("[INFO] Created weights file, %s, was NOT uploaded!" % model_path))
 
     return run_results
 
@@ -319,29 +323,11 @@ def get_train_args():
     Returns a dict of dicts to feed the deepaas API parser
     """
     train_args = cfg.train_args
-
-    # convert default values and possible 'choices' into strings
-    for key, val in train_args.items():
-        val['default'] = str(val['default']) #yaml.safe_dump(val['default']) #json.dumps(val['default'])
-        if 'choices' in val:
-            val['choices'] = [str(item) for item in val['choices']]
-
     return train_args
 
-
-# !!! deepaas>=0.5.0 calls get_test_args() to get args for 'predict'
-def get_test_args():
+def get_predict_args():
     predict_args = cfg.predict_args
-
-    # convert default values and possible 'choices' into strings
-    for key, val in predict_args.items():
-        val['default'] = str(val['default'])  # yaml.safe_dump(val['default']) #json.dumps(val['default'])
-        if 'choices' in val:
-            val['choices'] = [str(item) for item in val['choices']]
-        #print(val['default'], type(val['default']))
-
     return predict_args
-
 
 # during development it might be practical 
 # to check your code from the command line
@@ -364,7 +350,7 @@ if __name__ == '__main__':
 
     # get arguments configured for get_train_args()
     train_args = get_train_args()
-    for key, val in train_args.items():
+    for key, val in list(train_args.items()):
         parser.add_argument('--%s' % key,
                             default=val['default'],
                             type=type(val['default']),

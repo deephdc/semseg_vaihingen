@@ -6,7 +6,7 @@ def job_result_url = ''
 
 pipeline {
     agent {
-        label 'python'
+        label 'python3.6'
     }
 
     environment {
@@ -94,12 +94,12 @@ ${build_status}: Job '${env.JOB_NAME}\
 
                 def body = """
 Dear ${author_name},\n\n
-A new build of '${app_name} (${env.BRANCH_NAME})' DEEP application is available in Jenkins at:\n\n
+A new build of '${app_name}' DEEP application is available in Jenkins at:\n\n
 *  ${env.BUILD_URL}\n\n
 terminated with '${build_status}' status.\n\n
 Check console output at:\n\n
 *  ${env.BUILD_URL}/console\n\n
-and resultant Docker image rebuilding job at (may be empty in case of FAILURE):\n\n
+and resultant Docker images rebuilding jobs at (may be empty in case of FAILURE):\n\n
 *  ${job_result_url}\n\n
 
 DEEP Jenkins CI service"""

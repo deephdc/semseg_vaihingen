@@ -70,8 +70,8 @@ def every_element_five_augmentations(x, y):
         y_aug[counter, ...] = choose_augmentation(y[i, ...], index_aug)
         counter=counter+1
     
-    print counter
-    print x_aug.shape[0],x_aug.shape[1],x_aug.shape[2],x_aug.shape[3]
+    print(counter)
+    print(x_aug.shape[0],x_aug.shape[1],x_aug.shape[2],x_aug.shape[3])
   
     return x_aug, y_aug
 
@@ -102,7 +102,7 @@ def test_implementation():
     x = np.random.randint(0, 5, (4, 5, 5, 3))
     y = x[:, :, :, 0]
     x_a, y_a = every_element_randomly_once(x, y)
-    print(x.shape, x_a.shape, y.shape, y_a.shape)
+    print((x.shape, x_a.shape, y.shape, y_a.shape))
     print_matrix(x[0, :, :, 0])
     print_matrix(x_a[0, :, :, 0])
     print_matrix(y[0, :, :])

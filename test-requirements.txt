@@ -12,7 +12,5 @@ testtools>=1.4.0
 pytest
 pytest-cov
 
-tensorflow>=1.10.0
+tensorflow==1.10.0
 pydot-ng
-deepaas==0.5.1
-flaat

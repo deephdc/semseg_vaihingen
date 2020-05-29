@@ -33,15 +33,15 @@ def image_to_gray(data_in):
     img_bw = Image.fromarray(data_in, 'RGB').convert('L')
     data_bw = img_to_array(img_bw, dtype='int')
     data = np.concatenate((data_bw, data_bw, data_bw), axis=2)
-    print("[INFO] data_in.shape: {}, data_bw.shape: {}, data.shape: {}".format(
-           data_in.shape, data_bw.shape, data.shape))
-    print("[INFO] data_in.type: {}, data_bw.type: {}, data.type: {}".format(
-           data_in.dtype, data_bw.dtype, data.dtype))
+    print(("[INFO] data_in.shape: {}, data_bw.shape: {}, data.shape: {}".format(
+           data_in.shape, data_bw.shape, data.shape)))
+    print(("[INFO] data_in.type: {}, data_bw.type: {}, data.type: {}".format(
+           data_in.dtype, data_bw.dtype, data.dtype)))
 
     if debug:
-        print("[DEBUG] data_in {}".format(data_in[:5,:5,]))
-        print("[DEBUG] data_bw {}".format(data_bw[:5,:5,]))
-        print("[DEBUG] data {}".format(data[:5,:5,]))
+        print(("[DEBUG] data_in {}".format(data_in[:5,:5,])))
+        print(("[DEBUG] data_bw {}".format(data_bw[:5,:5,])))
+        print(("[DEBUG] data {}".format(data[:5,:5,])))
 
     return data
 
@@ -55,13 +55,13 @@ def load_image_jpg(file_path, convert_gray=False):
     data_raw = img_to_array(img, dtype='uint8')
     
     if debug:
-        print("[DEBUG] data_raw {}".format(data_raw[:5,:5,]))
+        print(("[DEBUG] data_raw {}".format(data_raw[:5,:5,])))
     
     if convert_gray:
         print("[INFO] Use conversation to grayscale!")
         data = image_to_gray(data_raw)
         if debug:
-            print("[DEBUG] data {}".format(data[:5,:5,]))
+            print(("[DEBUG] data {}".format(data[:5,:5,])))
     else:
         data = data_raw
 
@@ -89,29 +89,29 @@ def load_vaihingen_image(filename, image_number,
         data_raw = data_raw[:, :, :3]
     
     if debug:
-        print("[DEBUG] data shape: {}".format(data_raw.shape))
-        print("[DEBUG] data {}".format(data_raw[:5,:5,]))
+        print(("[DEBUG] data shape: {}".format(data_raw.shape)))
+        print(("[DEBUG] data {}".format(data_raw[:5,:5,])))
     
     if convert_gray:
         print("[INFO] Use conversation to grayscale!")
         data = image_to_gray(data_raw)
         if debug:
-            print("[DEBUG] data {}".format(data[:5,:5,]))
+            print(("[DEBUG] data {}".format(data[:5,:5,])))
     else:
         data = data_raw
 
     # show properties of the data and ground truth:
     if show_properties:
         print('- Ground truth:')
-        print('type:  ', ground_truth.dtype)
-        print('shape: ', ground_truth.shape)
+        print(('type:  ', ground_truth.dtype))
+        print(('shape: ', ground_truth.shape))
         print('- Data:')
-        print('type:  ', data.dtype)
-        print('shape: ', data.shape)
-        print('min:   ', np.min(data))
-        print('max:   ', np.max(data))
-        print('mean:  ', np.mean(data))
-        print('dev:   ', np.sqrt(np.var(data)))
+        print(('type:  ', data.dtype))
+        print(('shape: ', data.shape))
+        print(('min:   ', np.min(data)))
+        print(('max:   ', np.max(data)))
+        print(('mean:  ', np.mean(data)))
+        print(('dev:   ', np.sqrt(np.var(data))))
 
     return data, ground_truth
 
@@ -166,7 +166,7 @@ def generate_dataset(data_path, image_numbers, overlap_factor):
     for k in range(num_samples):
         x_array[k, :, :, :] = x_list[k]
         y_array[k, :, :] = y_list[k]
-    print('Generated {} samples!'.format(num_samples))
+    print(('Generated {} samples!'.format(num_samples)))
 
     return x_array, y_array
 
@@ -184,7 +184,7 @@ def load_data(name):
     f = h5py.File(name)
     x = np.array(f['x'], dtype=np.float32)
     y = np.array(f['y'], dtype=np.uint8)
-    print("[DEBUG] load_data, x.shape: {}".format(x.shape))
+    print(("[DEBUG] load_data, x.shape: {}".format(x.shape)))
     return x, y
 
 
