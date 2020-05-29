@@ -1,5 +1,5 @@
 # imports:
-from resnet50_edit import ResNet50
+from .resnet50_edit import ResNet50
 from keras.models import Model
 from keras.layers import Input, Convolution2D, Lambda, Add, Reshape, Activation
 import tensorflow as tf

@@ -111,7 +111,7 @@ def create_pdf(prediction, data_type):
         
     #print entries 
     pdf.set_font('Arial', size=14)
-    for label, value in prediction[summary_print['info'][0]].items():
+    for label, value in list(prediction[summary_print['info'][0]].items()):
         pdf.cell(cell_width[0], 10, "{}".format(label), ln=0)
         pdf.cell(cell_width[1], 10, "{}".format(value), ln=0)
         if len(summary_print['info']) == 2:

@@ -10,8 +10,8 @@
 Adapted from code contributed by BigMoyan.
 Adapted from Keras.
 """
-from __future__ import print_function
-from __future__ import absolute_import
+
+
 
 import warnings
 
