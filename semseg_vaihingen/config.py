@@ -2,7 +2,7 @@
 """
    Module to define CONSTANTS used across the project
 """
-
+import os
 from os import path
 from webargs import fields, validate
 
@@ -10,9 +10,24 @@ from webargs import fields, validate
 # identify basedir for the package
 BASE_DIR = path.dirname(path.normpath(path.dirname(__file__)))
 
-DATA_DIR = path.join(BASE_DIR,'data') # Location of model data and output files
+# default location for input and output data, e.g. directories 'data' and 'models',
+# is either set relative to the application path or via environment setting
+IN_OUT_BASE_DIR = BASE_DIR
+if 'APP_INPUT_OUTPUT_BASE_DIR' in os.environ:
+    env_in_out_base_dir = os.environ['APP_INPUT_OUTPUT_BASE_DIR']
+    if path.isdir(env_in_out_base_dir):
+        IN_OUT_BASE_DIR = env_in_out_base_dir
+    else:
+        msg = "[WARNING] \"APP_INPUT_OUTPUT_BASE_DIR=" + \
+        "{}\" is not a valid directory! ".format(env_in_out_base_dir) + \
+        "Using \"BASE_DIR={}\" instead.".format(BASE_DIR)
+        print(msg)
+
+DATA_DIR = path.join(IN_OUT_BASE_DIR, 'data') # Location of model data and output files
+MODEL_DIR = path.join(IN_OUT_BASE_DIR, 'models') # Location + name of the output model
+
 MODEL_WEIGHTS_FILE = 'resnet50_fcn_weights.hdf5'
-MODEL_DIR = path.join(BASE_DIR,'models') # Location + name of the output model
+
 MODEL_REMOTE_PUBLIC = 'https://nc.deep-hybrid-datacloud.eu/s/eTqJexZ5PcBxXR6/download?path='
 REMOTE_STORAGE = 'rshare:/semseg_vaihingen'
 REMOTE_MODELS_UPLOAD = path.join(REMOTE_STORAGE, 'models')
@@ -62,7 +77,7 @@ train_args = { 'augmentation': fields.Str(
 }
 
 predict_args = { "files": fields.Field(
-                    description="Data file to perform inference on.",
+                    description="Data file to perform inference on (vaihingen_#.hdf5 or any .tiff, .png, .jpg file).",
                     required = True,
                     type="file",
                     location="form"

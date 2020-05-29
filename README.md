@@ -6,7 +6,7 @@
 
 2D semantic segmentation (Vaihingen dataset)
 
-**Author:** G.Cavallaro (FZJ), M.Goetz (KIT), V.Kozlov (KIT), A.Grupp (KIT)
+**Author:** G.Cavallaro (FZJ), M.Goetz (KIT), V.Kozlov (KIT), A.Grupp (KIT), S.Donayer Holz (KIT)
 
 **Project:** This work is part of the [DEEP Hybrid-DataCloud](https://deep-hybrid-datacloud.eu/) project that has
 received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 777435.
@@ -67,7 +67,7 @@ Now open http://0.0.0.0:5000/ui and look for the methods belonging to the `semse
 
 The first step to train the neural network is to put the training file `vaihingen_train.hdf5` and the validation file `vaihingen_val.hdf5` into `./semseg_vaihingen/data`. More information about how to acquire the vaihingen dataset can be found [here](http://www2.isprs.org/commissions/comm3/wg4/2d-sem-label-vaihingen.html).
 
-A script that converts raw data into hdf5 file is also provided.
+An example script on how one may convert raw data into hdf5 file is also provided in semseg_vaihingen/dataset/raw2hdf5.py.
 
 ### Train the classifier
 
