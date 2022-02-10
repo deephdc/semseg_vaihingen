@@ -12,5 +12,5 @@ testtools>=1.4.0
 pytest
 pytest-cov
 
-tensorflow==1.10.0
+tensorflow==2.5.3
 pydot-ng
