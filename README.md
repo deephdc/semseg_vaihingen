@@ -1,3 +1,8 @@
+---
+# The Repository is ARCHIVED!
+### it is now maintained in https://github.com/ai4os-hub/semseg-vaihingen/
+---
+
 2D semantic segmentation
 ==============================
 
